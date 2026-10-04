@@ -2,6 +2,8 @@
 
 Interaktivna aplikacija za obnovu vanilla JavaScript-a (ES6+): 42 lekcije u 12 modula, editor sa konzolom, kvizovi sa bodovanjem i profili po nadimku.
 
+Tehnički termini su na engleskom (scope, hoisting, closure, handler...), a objašnjenja na srpskom.
+
 ## Pokretanje
 
 Dvaput klikni na `index.html`. Nema instalacije, build-a ni servera. Cela aplikacija je jedan fajl.
@@ -11,8 +13,8 @@ Dvaput klikni na `index.html`. Nema instalacije, build-a ni servera. Cela aplika
 
 ## Šta aplikacija radi
 
-- 12 modula: tipovi, operatori, kontrola toka, stringovi i regex, petlje, funkcije, nizovi/Set/Map, objekti i klase, JSON i datumi, greške, async i fetch, DOM i moduli.
-- Svaka lekcija: objašnjenje, "Česte zamke", editor sa bojenjem sintakse i konzolom (Ctrl/Cmd+Enter pokreće kod), kviz.
+- 12 modula: Basics & Types, Operators & Math, Control Flow, Strings & Regex, Loops, Functions, Arrays/Set/Map, Objects & Classes, JSON & Dates, Errors & Debugging, Async JavaScript & APIs, DOM/Events/Modules.
+- Svaka lekcija: kratak uvod, "Kako funkcioniše" (detaljno objašnjenje sa primerima), "Brza referenca", "Česte zamke", editor sa bojenjem sintakse i konzolom (Ctrl/Cmd+Enter pokreće kod), kviz.
 - DOM lekcije imaju interaktivan Pregled (pravi HTML u izolovanom iframe-u).
 - Kod se izvršava u sandbox iframe-u (`sandbox="allow-scripts"`), odvojeno od stranice. Beskonačna petlja ipak može da zamrzne karticu.
 - `fetch` u primerima je simuliran (adresa `https://api.demo.local/...`, rute `/users`, `/users/1`, `/missing`, `/broken`, `/offline`, `/slow`). Pravi mrežni pozivi se ne šalju.
@@ -62,6 +64,7 @@ Oznake (direktive):
 |---|---|
 | `=== id \| modul \| naslov` | Početak lekcije. `id` je jedinstven, `modul` je broj 1-12 (nazivi modula su u nizu `MODULES` u JavaScript delu). |
 | `@intro` | Uvod, jedan red je jedan pasus. |
+| `@how` | Detaljno objašnjenje "Kako funkcioniše". Redovi `## Naslov` su podnaslovi, `- ` su stavke liste, blok između \`\`\` redova je kod, ostalo su pasusi. |
 | `@points` | Redovi oblika `termin :: opis`. |
 | `@pitfalls` | Redovi koji počinju sa `- `. |
 | `@html` | Opciono: HTML za interaktivni Pregled (koriste ga DOM lekcije). |
@@ -85,3 +88,13 @@ Napomena o sačuvanim rezultatima: bodovi se pamte po ključu `idLekcije#rednibr
 
 - Primeri koji koriste `localStorage` i ES module su samo za čitanje, jer sandbox iframe nema pristup storage-u i ne može da učitava module iz više fajlova.
 - Sinhronizacije između uređaja nema (osim ručnog backup-a).
+
+## Objavljivanje na GitHub Pages
+
+1. `index.html` mora da bude u **korenu** repozitorijuma (isti nivo kao `README.md`), ne u podfolderu. Ime je tačno `index.html`, malim slovima.
+2. Repo, Settings, Pages: Source = "Deploy from a branch", Branch = `main`, folder = `/ (root)`.
+3. Sajt se otvara na `https://KORISNIK.github.io/IME-REPOA/`, a ne na `github.com/KORISNIK/IME-REPOA` (to je stranica repozitorijuma koja uvek prikazuje README).
+4. Posle svakog push-a sačekaj minut-dva da se završi deploy (tab Actions).
+
+Ako u korenu nema `index.html`, GitHub Pages prikaže `README.md` kao početnu stranicu. To je najčešći razlog što se vidi README umesto aplikacije.
+Fajl `.nojekyll` (prazan, u korenu) isključuje Jekyll obradu i garantuje da se stranica servira onakva kakva jeste.

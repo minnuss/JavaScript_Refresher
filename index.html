@@ -222,6 +222,14 @@ details.bk p{color:var(--muted);font-size:14px;max-width:60ch}
 .pts{color:var(--ok);font-weight:600}
 .stats{margin:-10px 0 26px;color:var(--muted)}
 .stats b{color:var(--text);font-weight:600}
+.how{max-width:70ch}
+.how h3{margin:22px 0 6px;font-size:1.02rem;font-weight:650}
+.how p{margin:0 0 10px}
+.how ul,.how ol{margin:0 0 12px;padding-left:22px}
+.how li{margin:4px 0}
+.how-code{margin:4px 0 14px;padding:12px 14px;background:var(--code-bg);border:1px solid var(--line);border-radius:8px;overflow-x:auto;font-size:13px;line-height:21px;white-space:pre}
+.how-code code{font:inherit;background:none;padding:0;border-radius:0}
+h2.ref{margin-top:6px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -243,7 +251,7 @@ details.bk p{color:var(--muted);font-size:14px;max-width:60ch}
     </div>
     <input id="search" type="search" placeholder="Traži temu" aria-label="Traži temu">
     <nav id="nav" aria-label="Lekcije"></nav>
-    <div class="st-note" id="stNote" hidden>Čuvanje u pregledaču nije dostupno (privatni režim?). Napredak važi samo dok je stranica otvorena.</div>
+    <div class="st-note" id="stNote" hidden>Čuvanje u browseru nije dostupno (privatni režim?). Napredak važi samo dok je stranica otvorena.</div>
     <div class="side-foot">
       <button id="themeBtn" type="button">Svetla tema</button>
       <button id="resetBtn" type="button">Resetuj napredak</button>
@@ -257,20 +265,37 @@ details.bk p{color:var(--muted);font-size:14px;max-width:60ch}
 </div>
 
 <script type="text/plain" id="content">
-=== vars | 1 | Promenljive i doseg: var, let, const
+=== vars | 1 | Variables & Scope: var, let, const
 @intro
-`var`, `let` i `const` se razlikuju u tri stvari: dosegu (scope), podizanju (hoisting) i mogućnosti ponovnog dodeljivanja vrednosti. U novom kodu koristi `const` kad god možeš, `let` kad vrednost mora da se menja, a `var` izbegavaj.
+`var`, `let` i `const` se razlikuju u tri stvari: scope-u, hoisting-u i mogućnosti ponovnog dodeljivanja vrednosti. U novom kodu koristi `const` kad god možeš, `let` kad vrednost mora da se menja, a `var` izbegavaj.
+@how
+## Šta je scope
+Scope određuje gde je neka promenljiva vidljiva. JavaScript ima tri nivoa: global scope (cela skripta), function scope (unutar funkcije) i block scope (unutar `{ }` kod `if`, `for` ili običnog bloka). Kad tražiš promenljivu, engine krene iz trenutnog scope-a i ide ka spoljašnjim dok je ne nađe. Taj niz scope-ova zove se scope chain. Ako je ne nađe nigde, dobijaš `ReferenceError`.
+## Kako rade var, let i const
+`var` poštuje samo function scope, pa promenljiva iz `if` bloka ili petlje "curi" u okolnu funkciju. `let` i `const` poštuju block scope, što je ponašanje koje očekuješ iz drugih jezika.
+## Hoisting i TDZ
+Pre izvršavanja engine prođe kroz kod i registruje sve deklaracije u njihovom scope-u. To je hoisting. `var` se registruje i odmah dobija vrednost `undefined`, zato je čitanje pre deklaracije "dozvoljeno". `let` i `const` su takođe registrovani, ali ostaju neinicijalizovani do linije deklaracije. Taj period je Temporal Dead Zone (TDZ), a pristup u njemu baca `ReferenceError`.
+```
+console.log(a); // undefined
+var a = 1;
+console.log(b); // ReferenceError (TDZ)
+let b = 2;
+```
+## Shadowing
+Promenljiva u unutrašnjem scope-u može da ima isto ime kao spoljašnja. Tada unutrašnja "zasenjuje" (shadows) spoljašnju, ali samo unutar svog scope-a. Spoljašnja ostaje netaknuta.
+## Šta koristiti
+Podrazumevano `const`. `let` samo kad vrednost mora da se menja (brojač, accumulator). `var` ne koristi u novom kodu. Imaj na umu da `const` čuva vezu (binding) i ne zamrzava vrednost, pa objekat ili array u `const` promenljivoj možeš da menjaš.
 @points
-`var` :: Doseg je cela funkcija. Podiže se na vrh funkcije i inicijalizuje na `undefined`. Može se redeklarisati.
-`let` :: Doseg je blok `{ }`. Podiže se, ali je u TDZ do linije deklaracije. Može se menjati, ne i redeklarisati.
+`var` :: Scope je cela funkcija. Hoisted je na vrh funkcije i inicijalizuje se na `undefined`. Može se redeklarisati.
+`let` :: Scope je blok `{ }`. Hoisted je, ali je u TDZ do linije deklaracije. Može se menjati, ne i redeklarisati.
 `const` :: Kao `let`, ali mora da se inicijalizuje i ne može se ponovo dodeliti. Objekat ili niz unutar `const` ipak može da se menja.
-Hoisting :: Deklaracije se "podižu" na vrh svog dosega. Kod `var` to znači `undefined` pre deklaracije, kod `function` deklaracija radi cela funkcija.
+Hoisting :: Deklaracije se "podižu" (hoisted) na vrh svog scope-a. Kod `var` to znači `undefined` pre deklaracije, kod `function` deklaracija radi cela funkcija.
 Temporal Dead Zone :: Period od početka bloka do linije deklaracije `let`/`const`. Svaki pristup baca `ReferenceError`.
 @pitfalls
-- `var` u petlji sa `setTimeout` deli jednu promenljivu, pa svi tajmeri vide završnu vrednost. `let` pravi novu promenljivu u svakoj iteraciji.
-- `const` nije "nepromenljiv objekat". Za to služi `Object.freeze()` (i on je plitak).
+- `var` u petlji sa `setTimeout` deli jednu promenljivu, pa svi timers vide završnu vrednost. `let` pravi novu promenljivu u svakoj iteraciji.
+- `const` nije "immutable objekat". Za to služi `Object.freeze()` (i on je plitak).
 @code
-// 1) Doseg
+// 1) Scope
 if (true) {
   var a = "var curi iz bloka";
   let b = "let ostaje u bloku";
@@ -312,7 +337,7 @@ A: `0 1 2`
 A*: `3 3 3`
 A: `2 2 2`
 A: Ništa
-W: `var` ima doseg funkcije, pa sve callback funkcije dele jednu promenljivu `i`. Kad se tajmeri izvrše, petlja je već završila sa `i === 3`.
+W: `var` ima scope funkcije, pa sve callback funkcije dele jednu promenljivu `i`. Kad se timers izvrše, petlja je već završila sa `i === 3`.
 @quiz
 Q: Šta se desi sa `const lista = []; lista.push(1);`?
 A*: Radi bez greške
@@ -331,7 +356,7 @@ A: `10`
 A*: `undefined`
 A: `ReferenceError`
 A: `null`
-W: `var x` se podiže na vrh funkcije i dobija vrednost `undefined`, a dodela `10` se izvršava tek na svojoj liniji.
+W: `var x` je hoisted na vrh funkcije i dobija vrednost `undefined`, a dodela `10` se izvršava tek na svojoj liniji.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: let i = 10;
@@ -346,16 +371,36 @@ A*: `20 / 10`
 A: `10 / 20`
 W: `let` unutar bloka pravi novu promenljivu koja "zasenjuje" spoljašnju. Spoljašnja `i` ostaje netaknuta.
 @quiz
-Q: Koji je preporučeni podrazumevani izbor za deklaraciju u novom kodu?
+Q: Koji je preporučeni default izbor za deklaraciju u novom kodu?
 A: `var`
 A: `let`, a `const` samo za konstante velikim slovima
 A*: `const`, a `let` samo kad vrednost mora da se ponovo dodeli
 A: Bez deklaracije
-W: `const` jasno kaže da se promenljiva ne preusmerava i hvata greške ranije. `var` se izbegava zbog doseg-a funkcije i podizanja.
+W: `const` jasno kaže da se promenljiva ne preusmerava i hvata greške ranije. `var` se izbegava zbog scope-a funkcije i hoisting-a.
 
-=== types | 1 | Tipovi podataka: primitivi i reference
+=== types | 1 | Data Types: primitives i references
 @intro
 JavaScript ima sedam primitivnih tipova i jedan referentni (objekti). Razlika određuje šta se dešava pri kopiranju i poređenju.
+@how
+## Dve grupe vrednosti
+Primitives (`string`, `number`, `boolean`, `null`, `undefined`, `symbol`, `bigint`) su jednostavne vrednosti koje se ne mogu menjati. Kad "promeniš" string, zapravo dobiješ novi. Sve ostalo je object, uključujući array, function, Date i Map.
+## Šta se desi pri dodeli
+Pri dodeli primitiva kopira se sama vrednost. Pri dodeli objekta kopira se *referenca* (pokazivač na isti objekat u memoriji):
+```
+let a = 5;            let o1 = { n: 1 };
+let b = a;            let o2 = o1;     // isti objekat
+b = 6;                o2.n = 2;
+// a je i dalje 5     // o1.n je 2
+```
+Isto važi pri prosleđivanju u funkciju: funkcija koja menja property prosleđenog objekta menja original.
+## Poređenje
+Primitives se porede po vrednosti, objects po referenci. Zato je `{} === {}` `false`, a `"a" === "a"` je `true`.
+## typeof i njegove zamke
+`typeof` vraća string sa imenom tipa. Poznate nepravilnosti: `typeof null === "object"` (istorijski bug), `typeof []` je `"object"` (koristi `Array.isArray`), a `typeof function(){}` je `"function"`.
+## number i preciznost
+`number` je 64-bit floating point (IEEE 754) i koristi se za sve brojeve. Zato `0.1 + 0.2` nije tačno `0.3`. Najveći bezbedan ceo broj je `Number.MAX_SAFE_INTEGER` (2^53 - 1). Za veće koristi `bigint` (`123n`). `bigint` i `number` se ne mešaju u aritmetici.
+## null i undefined
+`undefined` znači da vrednost nije postavljena (neinicijalizovana promenljiva, nepostojeći property, funkcija bez `return`). `null` je namerno "nema vrednosti" koje postavljaš ti.
 @points
 Primitivi :: `string`, `number`, `boolean`, `null`, `undefined`, `symbol`, `bigint`. Nepromenljivi su, kopiraju se po vrednosti i porede po vrednosti.
 Referentni tipovi :: `object`, `array`, `function`. Promenljiva čuva referencu (adresu) objekta, pa kopija pokazuje na isti objekat.
@@ -426,9 +471,25 @@ A: `0.1 + 0.2` je string
 A: Treba koristiti `==`
 W: Većina decimalnih razlomaka nema tačan binarni zapis. Za novac računaj u najmanjoj jedinici kao ceo broj, a za poređenje koristi `Math.abs(a - b) < Number.EPSILON` ili zaokruživanje.
 
-=== coercion | 1 | Konverzije tipova i coercion
+=== coercion | 1 | Type Conversions & Coercion
 @intro
 Kad tipovi ne odgovaraju operatoru, JavaScript ih tiho pretvara. Znaj pravila, a u svom kodu pretvaraj eksplicitno.
+@how
+## Kako radi coercion
+JavaScript je dinamički tipiziran: promenljiva može da drži bilo koji tip, a operatori sami konvertuju vrednosti kad tipovi ne odgovaraju. To je coercion. Pravila nisu nasumična, ali ih je lako zaboraviti, zato u svom kodu konvertuj eksplicitno.
+## Tri ciljna tipa
+Konverzija uvek završava u jednom od tri tipa: string, number ili boolean.
+- U **string**: `+` kad je jedan operand string, template literals, `String(x)`.
+- U **number**: `-`, `*`, `/`, unarni `+`, poređenja `<` i `>` (kad nisu oba stringa), `Number(x)`.
+- U **boolean**: uslovi u `if`, `!`, `&&`, `||`, `?:`, `Boolean(x)`.
+## Truthy i falsy
+Svaka vrednost u kontekstu uslova postaje `true` ili `false`. Falsy je tačno osam vrednosti: `false`, `0`, `-0`, `0n`, `""`, `null`, `undefined` i `NaN`. Sve ostalo je truthy, uključujući `"0"`, `"false"`, `[]` i `{}`.
+## Operator +
+`+` je jedini operator sa dvostrukom ulogom. Ako je bar jedan operand string, spaja. Inače sabira brojeve. Evaluacija ide sleva nadesno, zato `1 + 2 + "3"` daje `"33"`, a `"1" + 2 + 3` daje `"123"`.
+## Number, parseInt, parseFloat
+`Number("12px")` je `NaN` jer traži da ceo string bude broj. `parseInt("12px", 10)` čita do prvog nevalidnog znaka i vraća `12`. Uz `parseInt` uvek prosledi radix 10. Pazi na prazan string: `Number("")` i `Number("  ")` su `0`.
+## Praktično pravilo
+Podatke iz input polja, URL-a ili JSON-a uvek eksplicitno konvertuj i proveri (`Number.isNaN`). Poredi sa `===` da se coercion ne dešava neprimećeno.
 @points
 Eksplicitna konverzija :: `String(x)`, `Number(x)`, `Boolean(x)`, `parseInt(s, 10)`, `parseFloat(s)`.
 Unarni `+` :: `+"42"` daje `42`. Kratka zamena za `Number()`.
@@ -438,7 +499,7 @@ Falsy vrednosti :: `false`, `0`, `-0`, `0n`, `""`, `null`, `undefined`, `NaN`. S
 `Number` i `parseInt` :: `Number("12px")` je `NaN`, a `parseInt("12px", 10)` je `12`. Uvek prosledi osnovu (radix).
 @pitfalls
 - `Number("")` je `0`, `Number(null)` je `0`, ali `Number(undefined)` je `NaN`.
-- `[] + {}` i slični izrazi su zabavni za kviz, ali u kodu su znak da nešto nije u redu.
+- `[] + {}` i slični expressions su zabavni za kviz, ali u kodu su znak da nešto nije u redu.
 @code
 // Eksplicitno
 console.log(Number("42"), Number("42px"), Number(""), Number(null), Number(undefined));
@@ -456,12 +517,12 @@ const falsy = [false, 0, -0, 0n, "", null, undefined, NaN];
 console.log(falsy.map(v => Boolean(v)));
 console.log(!!"false", !!{}, !![]);
 @quiz
-Q: Šta je rezultat izraza `"5" + 3 - 2`?
+Q: Šta je rezultat expression-a `"5" + 3 - 2`?
 A: `6`
 A*: `51`
 A: `"51"`
 A: `NaN`
-W: Izraz se računa sleva nadesno: `"5" + 3` je string `"53"`, pa `"53" - 2` pretvara u broj i daje broj `51`.
+W: Expression se računa sleva nadesno: `"5" + 3` je string `"53"`, pa `"53" - 2` pretvara u broj i daje broj `51`.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: console.log(Number("12px"), parseInt("12px", 10), Number(""), +"3");
@@ -486,9 +547,22 @@ A*: `[]`
 A: `null`
 W: Prazan niz i prazan objekat su truthy. Falsy su samo `false`, `0`, `-0`, `0n`, `""`, `null`, `undefined` i `NaN`.
 
-=== arithmetic | 2 | Aritmetički operatori
+=== arithmetic | 2 | Arithmetic Operators
 @intro
 Osnovne operacije rade očekivano. Pažnju traže ostatak pri deljenju, eksponent i razlika između pre i post inkrementa.
+@how
+## Šta treba da znaš
+Operatori su standardni, ali par detalja se često previdi. `/` uvek daje decimalan rezultat (nema celobrojnog deljenja): `7 / 2` je `3.5`. Za celobrojni deo koristi `Math.trunc` ili `Math.floor`.
+## Remainder (%)
+`%` vraća ostatak, a znak rezultata prati prvi (levi) operand: `-7 % 3` je `-1`, a `7 % -3` je `1`. Za pravi modulo koji je uvek nenegativan: `((n % m) + m) % m`. Tipične upotrebe: parnost (`n % 2 === 0`), kružni indeks (`i % duzina`), minuti u satu (`min % 60`).
+## Operator precedence
+Redosled: zagrade, `**`, unarni (`++`, `!`, `-`), `* / %`, `+ -`. Operator `**` je desno asocijativan: `2 ** 3 ** 2` je `2 ** 9`. Kad nisi siguran, stavi zagrade. Čitljivost vredi više od pamćenja tabele.
+## ++ i --
+`i++` (postfix) vraća staru vrednost pa povećava, a `++i` (prefix) povećava pa vraća novu. Kao samostalna linija nema razlike. U složenim expressions izbegavaj oba oblika.
+## Compound assignment
+`x += 5` je isto što i `x = x + 5`. Postoje `-=`, `*=`, `/=`, `%=`, `**=`, a takođe i logički `&&=`, `||=`, `??=`.
+## Unarni plus
+`+x` pretvara vrednost u number (`+"5"` je `5`). Kratko, ali manje čitljivo od `Number(x)`.
 @points
 `+ - * /` :: Osnovne operacije. Deljenje uvek daje decimalni broj: `7 / 2` je `3.5`.
 `%` :: Ostatak pri deljenju. Koristi se za parnost (`n % 2 === 0`) i kružne indekse. Znak rezultata prati prvi operand: `-7 % 3` je `-1`.
@@ -496,7 +570,7 @@ Osnovne operacije rade očekivano. Pažnju traže ostatak pri deljenju, eksponen
 `++` i `--` :: `i++` vraća staru vrednost pa povećava, `++i` povećava pa vraća novu.
 Složena dodela :: `+=`, `-=`, `*=`, `/=`, `%=`, `**=`.
 @pitfalls
-- Ne koristi `i++` i `++i` unutar većih izraza. Čitljivost brzo pada.
+- Ne koristi `i++` i `++i` unutar većih expression-a. Čitljivost brzo pada.
 @code
 console.log(7 + 2, 7 - 2, 7 * 2, 7 / 2);
 console.log(7 % 3, -7 % 3, 2 ** 10, 2 ** 0.5);
@@ -541,9 +615,25 @@ A: Zato što `%` vraća string
 A: Pouzdana je, nema problema
 W: Znak ostatka prati prvi operand. Koristi `n % 2 !== 0` za neparno ili `Math.abs(n % 2) === 1`.
 
-=== rounding | 2 | Zaokruživanje, Math funkcije, NaN i Infinity
+=== rounding | 2 | Rounding, Math, NaN & Infinity
 @intro
 Četiri `Math` funkcije zaokružuju na različite načine, a `toFixed()` zaokružuje u tekst. Posebnu pažnju traže `NaN` i `Infinity`.
+@how
+## Četiri načina zaokruživanja
+Razlika je u tome kuda se broj kreće na brojnoj pravoj:
+- `Math.floor` ide ka -∞ (naniže): `2.7` postaje `2`, `-2.1` postaje `-3`.
+- `Math.ceil` ide ka +∞ (naviše): `2.1` postaje `3`, `-2.7` postaje `-2`.
+- `Math.trunc` odseca decimale (ka nuli): `2.7` postaje `2`, `-2.7` postaje `-2`.
+- `Math.round` bira najbliži ceo broj, a polovina ide ka +∞: `2.5` postaje `3`, `-2.5` postaje `-2`.
+Za pozitivne brojeve `floor` i `trunc` su isti, za negativne nisu.
+## toFixed vraća string
+`(19.999).toFixed(2)` vraća `"20.00"` (string), što je namenjeno prikazu. Za računanje pretvori nazad sa `Number()`. `toFixed` ima i problem sa binarnom reprezentacijom (`1.005.toFixed(2)` daje `"1.00"`). Za novac računaj u najmanjoj jedinici (para, cent) kao ceo broj, a decimale pravi tek pri prikazu (`Intl.NumberFormat`).
+## NaN
+`NaN` nastaje pri nevalidnoj numeričkoj operaciji (`0 / 0`, `Number("abc")`, `Math.sqrt(-1)`). Zarazan je: svaka operacija sa `NaN` daje `NaN`. Jedina je vrednost koja nije jednaka samoj sebi, pa `x === NaN` ne radi. Koristi `Number.isNaN(x)`.
+## Infinity
+`1 / 0` je `Infinity`, bez greške kao u nekim jezicima. `Number.isFinite(x)` proverava da li je broj konačan (nije `NaN` ni ±`Infinity`).
+## Math.random
+Vraća broj u opsegu [0, 1). Za ceo broj od `min` do `max` uključivo: `Math.floor(Math.random() * (max - min + 1)) + min`. Nije kriptografski siguran; za tokene koristi `crypto.getRandomValues`.
 @points
 `Math.floor` :: Zaokružuje ka manjem (ka -∞): `floor(-2.5)` je `-3`.
 `Math.ceil` :: Zaokružuje ka većem (ka +∞): `ceil(-2.5)` je `-2`.
@@ -625,20 +715,33 @@ A*: `Number.isNaN(x)`
 A: `typeof x === "NaN"`
 W: `NaN` nije jednak ni samom sebi, pa `===` ne radi. `Number.isNaN` je strogi test, za razliku od globalnog `isNaN` koji prvo konvertuje.
 @quiz
-Q: Koji izraz daje nasumičan ceo broj od 1 do 10 (uključivo)?
+Q: Koji expression daje nasumičan ceo broj od 1 do 10 (uključivo)?
 A: `Math.round(Math.random() * 10)`
 A*: `Math.floor(Math.random() * 10) + 1`
 A: `Math.random() * 10 + 1`
 A: `Math.ceil(Math.random() * 11)`
 W: `Math.random()` daje [0, 1). Pomnoženo sa 10 i zaokruženo naniže daje 0 do 9, a `+ 1` pomera na 1 do 10.
 
-=== comparison | 2 | Operatori poređenja
+=== comparison | 2 | Comparison Operators: == vs ===
 @intro
-Dva znaka jednakosti dozvoljavaju konverziju tipova, tri ne. U praksi: uvek `===`, uz jedan opravdan izuzetak.
+Dva znaka jednakosti dozvoljavaju konverziju tipova, tri ne. U praksi: uvek `===`, uz jedan opravdan exception.
+@how
+## Dve vrste jednakosti
+`===` (strict equality) poredi tip i vrednost. `==` (loose equality) pre poređenja radi coercion po složenim pravilima, pa su `0 == ""` i `"0" == false` `true`, a `null == 0` je `false`. Zato je pravilo: uvek `===` i `!==`.
+## Jedini opravdan ==
+`x == null` je `true` samo za `null` i `undefined`. To je skraćenica za `x === null || x === undefined`.
+## Šta se poredi
+- **Primitives** po vrednosti.
+- **Objects** (array, function, Date...) po referenci. Dva odvojeno napravljena objekta nikad nisu `===`, čak i sa istim sadržajem.
+- `NaN` nije jednak sebi. `Object.is(NaN, NaN)` je `true`, a `Object.is(0, -0)` je `false`.
+## Relational operators
+`<`, `>`, `<=`, `>=`: ako su oba operanda stringovi, porede se leksikografski (po kodovima znakova), pa je `"10" < "9"`. Ako je bar jedan broj, drugi se konvertuje u number. Sa `NaN` svako poređenje daje `false`.
+## Poređenje po sadržaju
+Za objekte nema ugrađenog `deepEqual`. Opcije: poredi ključna polja ručno, `JSON.stringify` za jednostavne podatke (zavisi od redosleda ključeva) ili biblioteka (npr. lodash `isEqual`).
 @points
 `==` i `!=` :: Loose poređenje sa coercion-om: `5 == "5"` je `true`, `0 == false` je `true`.
 `===` i `!==` :: Strict poređenje. Tipovi moraju da se poklope, nema konverzije.
-Izuzetak :: `x == null` hvata i `null` i `undefined` odjednom.
+Special case :: `x == null` hvata i `null` i `undefined` odjednom.
 Po vrednosti i po referenci :: Primitivi se porede po vrednosti, objekti i nizovi po referenci: `{} === {}` je `false`.
 `Object.is` :: Kao `===`, ali `Object.is(NaN, NaN)` je `true`, a `Object.is(0, -0)` je `false`.
 `<`, `>`, `<=`, `>=` :: Dva stringa se porede leksikografski: `"10" < "9"` je `true`. Ako je jedan broj, drugi se konvertuje.
@@ -696,17 +799,35 @@ W: Dva stringa se porede leksikografski (`"1"` < `"9"`), a ako je jedan broj, dr
 @quiz
 Q: Dva objekta imaju isti sadržaj, ali `a === b` je `false`. Šta radiš da ih uporediš?
 A: Koristiš `==`
-A*: Porediš svojstva ručno ili koristiš deep-equal funkciju (`JSON.stringify` samo za jednostavne podatke)
+A*: Porediš properties ručno ili koristiš deep-equal funkciju (`JSON.stringify` samo za jednostavne podatke)
 A: Koristiš `Object.is`
 A: Zameniš ih nizovima
 W: `===` i `==` porede reference. `Object.is` se ponaša isto za objekte. Poređenje po sadržaju traži rad.
 
-=== logical | 2 | Logički operatori, ?? i logička dodela
+=== logical | 2 | Logical Operators, ?? & Logical Assignment
 @intro
-`&&` i `||` ne vraćaju nužno `true` ili `false`, već jednu od svojih vrednosti. Zato rade kao prečice za uslove i podrazumevane vrednosti.
+`&&` i `||` ne vraćaju nužno `true` ili `false`, već jednu od svojih vrednosti. Zato rade kao prečice za uslove i default values.
+@how
+## Ne vraćaju boolean
+`&&` i `||` ne vraćaju `true`/`false`, već jedan od svojih operanada. Zato rade i kao kontrola toka i za default vrednosti.
+- `a && b`: ako je `a` falsy, vrati `a`; inače vrati `b`.
+- `a || b`: ako je `a` truthy, vrati `a`; inače vrati `b`.
+## Short-circuit evaluation
+Desna strana se ne izvršava ako je rezultat već poznat. `user && user.name` neće pročitati `name` ako je `user` falsy. `uslov && radi()` poziva `radi` samo kad je uslov tačan. Isto važi za `??` i `?.`.
+## Nullish coalescing ??
+`a ?? b` vraća `b` samo kad je `a` `null` ili `undefined`. Za razliku od `||`, ne preskače `0`, `""` ni `false`. Zato je `??` pravi izbor za default vrednosti kad su te vrednosti validne (količina `0`, prazan tekst).
+```
+const kolicina = 0;
+kolicina || 10;   // 10 (nula je falsy)
+kolicina ?? 10;   // 0  (nula je validna)
+```
+## Logical assignment
+`a ||= b` dodeljuje samo ako je `a` falsy, `a &&= b` samo ako je truthy, a `a ??= b` samo ako je `a` `null` ili `undefined`. Idiom `x ??= []` znači "napravi ako ne postoji".
+## Mešanje operatora
+`??` se ne sme mešati sa `&&` ili `||` bez zagrada (SyntaxError): piši `(a ?? b) || c`.
 @points
 `&&` :: Vraća prvu falsy vrednost, a ako je nema, poslednju. `user && user.name`.
-`||` :: Vraća prvu truthy vrednost, a ako je nema, poslednju. Klasičan način za podrazumevane vrednosti.
+`||` :: Vraća prvu truthy vrednost, a ako je nema, poslednju. Klasičan način za default values.
 `!` i `!!` :: Negacija. Dvostruka negacija pretvara u pravi `boolean`.
 Short-circuit :: Desna strana se ne izvršava ako je ishod već poznat.
 `??` :: Nullish coalescing: vraća desnu stranu samo kad je leva `null` ili `undefined`. Za razliku od `||`, `0`, `""` i `false` ostaju.
@@ -768,11 +889,30 @@ A: Baca `TypeError`
 A*: `null`
 A: `undefined`
 A: `""`
-W: `&&` vraća prvu falsy vrednost i ne izvršava desnu stranu. Zato nema pristupa svojstvu od `null`.
+W: `&&` vraća prvu falsy vrednost i ne izvršava desnu stranu. Zato nema pristupa property-ju od `null`.
 
-=== ifelse | 3 | If / else if / else
+=== ifelse | 3 | If / Else If / Else
 @intro
 Osnovna grana odlučivanja. Čitljiv `if` kod je ravan: manje gnezdenja, jasni uslovi, ranije izlaženje iz funkcije.
+@how
+## Kako se uslov evaluira
+Expression u `if (...)` se pretvara u boolean po truthy/falsy pravilima. Zato `if (niz.length)` radi, a `if (user)` proverava da li postoji. Pazi: kad je `0` ili `""` validna vrednost, proveri eksplicitno (`!== undefined`, `!= null`).
+## else if lanac
+Uslovi se proveravaju redom, a izvršava se samo prva tačna grana. Zato specifičnije uslove stavljaj pre opštih (`>= 90` pre `>= 75`).
+## Guard clauses
+Umesto dubokog gnežđenja, obradi nevalidne slučajeve na početku i izađi iz funkcije:
+```
+function plati(korisnik) {
+  if (!korisnik) return;            // guard
+  if (!korisnik.aktivan) return;    // guard
+  // ovde je glavni tok, bez gnežđenja
+}
+```
+Kod postaje ravan i čita se odozgo nadole.
+## Vitičaste zagrade
+Za jedan statement zagrade su opcione, ali ih uvek koristi kad je telo u više redova, da izbegneš bagove pri kasnijoj izmeni.
+## Early return
+`return` u `if` bloku zaustavlja funkciju, pa ti `else` često nije potreban.
 @points
 Sintaksa :: `if (uslov) { ... } else if (uslov2) { ... } else { ... }`. Uslov se pretvara u `boolean` (truthy/falsy).
 Redosled :: Izvršava se prva grana čiji je uslov tačan. Specifičnije uslove stavi pre opštih.
@@ -818,14 +958,14 @@ A: Izvrši blok jer je `x` truthy
 A*: Ne izvrši blok, a `x` postaje `0`
 A: Baci `SyntaxError`
 A: Poredi `x` sa `0`
-W: `x = 0` je izraz dodele čija je vrednost `0` (falsy). Promenljiva se prepiše, a blok se preskače.
+W: `x = 0` je expression dodele čija je vrednost `0` (falsy). Promenljiva se prepiše, a blok se preskače.
 @quiz
 Q: Šta je guard clause?
-A: Poseban tip `if` naredbe
+A: Poseban tip `if` statement-a
 A*: Rani `return` (ili `throw`) za nevalidan slučaj na početku funkcije, da ostatak koda ne bude gnežđen
 A: `else` blok bez uslova
 A: Zaštita od beskonačne petlje
-W: Obradiš izuzetke prvo i izađeš, pa glavni tok ostaje ravan i čitljiv.
+W: Obradiš nevalidne slučajeve prvo i izađeš, pa glavni tok ostaje ravan i čitljiv.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: const n = 0;
@@ -838,16 +978,32 @@ A: `C`
 A: Ništa
 W: `n` je `0` (falsy), pa prva grana otpada. Druga grana je tačna.
 
-=== ternary | 3 | Ternarni operator
+=== ternary | 3 | Ternary Operator
 @intro
-Ternarni operator je `if` u obliku izraza, pa može da stoji tamo gde se očekuje vrednost: u dodeli, argumentu ili template literalu.
+Ternarni operator je `if` u obliku expression-a, pa može da stoji tamo gde se očekuje vrednost: u dodeli, argumentu ili template literalu.
+@how
+## Expression, ne statement
+Razlika između expression i statement je ključna. Expression daje vrednost (`2 + 3`, `x > 5`, `a ? b : c`), a statement izvršava radnju (`if`, `for`). Ternary je expression, pa može tamo gde se očekuje vrednost: dodela, argument funkcije, `return` i unutar template literala. `if` to ne može.
+```
+const poruka = `Imaš ${n} ${n === 1 ? "poruku" : "poruka"}`;
+```
+## Evaluacija
+Izvršava se samo jedna grana. Ako je uslov truthy, računa se prva, inače druga.
+## Ulančavanje
+`a ? x : b ? y : z` se čita zdesna kao `a ? x : (b ? y : z)`. Radi, ali formatiraj svaku granu u novi red. Ako imaš više od dve grane ili grane rade nešto složeno, pređi na `if/else`, `switch` ili lookup object.
+## Lookup object umesto grananja
+```
+const boja = { error: "crveno", warn: "žuto" }[nivo] ?? "sivo";
+```
+## Šta izbegavati
+Ternary koji samo poziva funkcije zbog side effects (`ok ? a() : b()`). Tu je `if` jasniji.
 @points
 Sintaksa :: `uslov ? izrazAkoTačno : izrazAkoNetačno`.
-Izraz, ne naredba :: Vraća vrednost, pa se može koristiti unutar `${}` i kao povratna vrednost funkcije.
+Expression, ne statement :: Vraća vrednost, pa se može koristiti unutar `${}` i kao return value funkcije.
 Ulančavanje :: `a ? x : b ? y : z` radi, ali je čitljivo samo ako je formatirano u kolonu.
-Kada izbegavati :: Više od dve grane, nuspojave u granama ili ugnežđeni uslovi. Koristi `if`, `switch` ili objekat za lookup.
+Kada izbegavati :: Više od dve grane, side effects u granama ili nested uslovi. Koristi `if`, `switch` ili objekat za lookup.
 @pitfalls
-- Ne koristi ternarni samo da pozoveš funkciju (`uslov ? a() : b()`). `if` jasnije kaže da radiš nuspojavu.
+- Ne koristi ternarni samo da pozoveš funkciju (`uslov ? a() : b()`). `if` jasnije kaže da radiš side effect.
 @code
 const starost = 20;
 const status = starost >= 18 ? "punoletan" : "maloletan";
@@ -869,16 +1025,16 @@ console.log(opis);
 const boje = { error: "crveno", warn: "žuto", ok: "zeleno" };
 console.log(boje["warn"] ?? "sivo", boje["info"] ?? "sivo");
 
-// Radi, ali je if jasniji za nuspojave
+// Radi, ali je if jasniji za side effects
 const jeAdmin = true;
 jeAdmin ? console.log("admin panel") : console.log("pristup odbijen");
 @quiz
 Q: Zašto ternarni operator može da stoji unutar template literala, a `if` ne?
 A: Zato što je ternarni brži
-A*: Zato što je ternarni izraz koji vraća vrednost, a `if` je naredba
+A*: Zato što je ternarni expression koji vraća vrednost, a `if` je statement
 A: Zato što `if` ne podržava stringove
 A: Može i `if`
-W: `${}` prima izraz. `if` je naredba i ne proizvodi vrednost, pa ne može da stoji tamo.
+W: `${}` prima expression. `if` je statement i ne proizvodi vrednost, pa ne može da stoji tamo.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: const n = 5;
@@ -887,24 +1043,35 @@ A*: `veliko`
 A: `srednje`
 A: `malo`
 A: `true`
-W: Uslov `n > 3` je tačan, pa se vraća prva grana i ostatak ulančanog izraza se ne računa.
+W: Uslov `n > 3` je tačan, pa se vraća prva grana i ostatak ulančanog expression-a se ne računa.
 @quiz
 Q: Kada ulančani ternarni operator treba zameniti sa `if` ili lookup objektom?
 A: Nikad
-A*: Kad ima više od dve grane ili grane imaju nuspojave, jer postaje nečitljiv
+A*: Kad ima više od dve grane ili grane imaju side effects, jer postaje nečitljiv
 A: Uvek kad se koristi u template literalu
 A: Samo za brojeve
 W: Ternarni je odličan za jednostavan izbor vrednosti. Za složeniju logiku `if`, `switch` ili objekat pretraga su jasniji.
 
-=== switch | 3 | Switch
+=== switch | 3 | Switch Statement
 @intro
 `switch` poredi jednu vrednost sa više slučajeva. Dobar je za diskretne vrednosti (rola, tip akcije), a loš za opsege.
+@how
+## Kako radi
+`switch` evaluira expression jednom, pa ga poredi (sa `===`) sa svakim `case` redom. Kad nađe poklapanje, izvršava kod od tog `case`-a naniže dok ne naiđe na `break`, `return` ili kraj bloka. To ponašanje se zove fall-through.
+## Zašto break
+Bez `break`, izvršavanje "propada" u sledeći `case`, što je najčešći izvor bagova. Namerni fall-through koristi se za grupisanje (više `case` oznaka zaredom dele isti kod) i treba ga označiti komentarom.
+## default
+Izvršava se ako nijedan `case` ne odgovara. Može da stoji bilo gde, ali se piše na kraju.
+## Scope unutar case
+Ceo `switch` je jedan block scope, pa dva `case`-a sa `let x` bacaju grešku zbog redeklaracije. Reši vitičastim zagradama: `case 1: { let x = ...; break; }`.
+## switch ili object lookup
+Kad `switch` samo mapira vrednost na vrednost, objekat je kraći: `const dani = { 1: "pon", 2: "uto" }; dani[n] ?? "?"`. `switch` ostaje dobar kad grane izvršavaju različit kod.
 @points
 Poređenje :: Koristi `===`, pa `"1"` ne pogađa `case 1`.
 `break` :: Bez njega izvršavanje "propada" u sledeći `case` (fall-through), što je retko namerno.
 Grupisanje :: Više `case` oznaka zaredom dele isti kod.
 `default` :: Grana kad ništa ne pogodi. Obično na kraju.
-Doseg :: Ceo `switch` je jedan blok. Za `let`/`const` u `case` koristi sopstvene vitičaste zagrade.
+Scope :: Ceo `switch` je jedan blok. Za `let`/`const` u `case` koristi sopstvene vitičaste zagrade.
 `switch (true)` :: Obrazac za opsege, ali je za više od par slučajeva čitljiviji lanac `if`-ova.
 @pitfalls
 - Zaboravljen `break` je klasičan bag. Namerni fall-through označi komentarom.
@@ -948,7 +1115,7 @@ switch ("1") {
   case "1": console.log("string '1'"); break;
 }
 
-// switch (true) za opsege, uz blok doseg
+// switch (true) za opsege, uz blok scope
 const bmi = 27;
 switch (true) {
   case bmi < 18.5: console.log("ispod"); break;
@@ -993,11 +1160,26 @@ A: `BCD`
 A: `ABC`
 W: Izvršavanje počinje od `case 2` i propada u `case 3` jer nema `break`, a zaustavlja ga `break` posle `C`.
 
-=== strings | 4 | Stringovi i njihove metode
+=== strings | 4 | Strings & String Methods
 @intro
-Stringovi su nepromenljivi: svaka metoda vraća novi string, a original ostaje isti. Template literali su podrazumevani način za sastavljanje teksta.
+Stringovi su immutable: svaka metoda vraća novi string, a original ostaje isti. Template literali su default način za sastavljanje teksta.
+@how
+## Immutability
+Stringovi su immutable: nijedna metoda ne menja original, svaka vraća novi string. `s.toUpperCase();` bez dodele ne radi ništa, a `s[0] = "X"` se tiho ignoriše.
+## Indeksi i UTF-16
+String se sastoji od UTF-16 jedinica. `length` broji jedinice, ne "vidljive znakove": emoji i neki znaci imaju dužinu 2. Za iteraciju po stvarnim znakovima koristi `for...of` ili `[...s]`.
+## Template literals
+Backtick string omogućava interpolaciju `${expression}` (bilo koji expression) i višelinijski tekst. Za ubacivanje promenljivih uvek koristi njih umesto spajanja sa `+`.
+## Pretraga i izdvajanje
+- `includes`, `startsWith`, `endsWith` vraćaju boolean.
+- `indexOf(x)` vraća poziciju ili `-1`. Pazi: `if (s.indexOf(x))` ne radi jer je `0` falsy.
+- `slice(od, do)` podržava negativne indekse (od kraja), `substring` ne.
+## Transformacija
+`trim`, `toUpperCase`, `toLowerCase`, `padStart`, `padEnd`, `repeat`, `replace` (samo prvo pojavljivanje), `replaceAll`. Za `split` i `join`: `"a,b".split(",")` daje array, a `array.join(",")` vraća string.
+## Poređenje i sortiranje teksta
+Za tekst na srpskom koristi `a.localeCompare(b, "sr")` da slova č, ć, š, ž, đ budu na pravom mestu.
 @points
-Template literals :: Backtick navodnici, interpolacija `${izraz}` i višelinijski tekst.
+Template literals :: Backtick navodnici, interpolacija `${expression}` i višelinijski tekst.
 `.length` :: Broj UTF-16 jedinica. Emoji i neki znaci računaju se kao dve.
 `.slice(od, do)` :: Deo stringa, `do` nije uključen, negativni indeksi broje od kraja: `slice(-3)`.
 `.substring(od, do)` :: Slično, ali zamenjuje redosled argumenata ako je `od > do`, a negativne tretira kao `0`.
@@ -1033,7 +1215,7 @@ console.log("a-b-c".replace("-", "+"), "a-b-c".replaceAll("-", "+"));
 console.log("7".padStart(3, "0"), "abc".repeat(2));
 console.log([..."čaša"].reverse().join(""));
 
-// stringovi su nepromenljivi
+// stringovi su immutable
 let w = "abc";
 w[0] = "X";
 console.log(w);
@@ -1068,7 +1250,7 @@ A: `JAVASCRIPT 10 t`
 A*: `JavaScript 10 t`
 A: `JavaScript 9 t`
 A: `JavaScript 10 undefined`
-W: Stringovi su nepromenljivi: `toUpperCase()` vraća novi string, a rezultat je odbačen jer ga nismo sačuvali.
+W: Stringovi su immutable: `toUpperCase()` vraća novi string, a rezultat je odbačen jer ga nismo sačuvali.
 @quiz
 Q: Kako od broja `7` dobiti string `"007"`?
 A: `7.toString(3)`
@@ -1077,29 +1259,44 @@ A*: `String(7).padStart(3, "0")`
 A: `7.padStart(3, "0")`
 W: `padStart` postoji samo na stringovima, pa broj prvo pretvoriš u string.
 
-=== regex1 | 4 | Regex: osnove
+=== regex1 | 4 | Regex: basics
 @intro
-Regularni izraz (regex) je kratak jezik za opisivanje obrazaca u tekstu. Koristi se za validaciju, pretragu i izmenu stringova. Ovde je samo ono što ti stvarno treba.
+Regular expression (regex) je kratak jezik za opisivanje obrazaca u tekstu. Koristi se za validaciju, pretragu i izmenu stringova. Ovde je samo ono što ti stvarno treba.
+@how
+## Šta je regex
+Regular expression opisuje obrazac. Engine ga primenjuje na string i traži poklapanje (match). Piše se kao literal `/obrazac/flags` ili preko `new RegExp("obrazac", "flags")`.
+## Gradivni elementi
+- **Literali**: `abc` pogađa tačno "abc".
+- **Character classes**: `\d` cifra, `\w` slovo/cifra/`_`, `\s` whitespace, `.` bilo šta osim novog reda, `[abc]` skup, `[a-z]` opseg, `[^abc]` negacija.
+- **Quantifiers**: `*`, `+`, `?`, `{n}`, `{n,m}` kažu koliko puta se prethodni element ponavlja.
+- **Anchors**: `^` početak, `$` kraj, `\b` granica reči.
+- **Groups i alternation**: `(ab)+`, `a|b`.
+## Kako engine traži
+Regex se isprobava od svake pozicije u stringu (osim kad ga ograničavaju anchors) i ide sleva nadesno. Quantifiers su po defaultu greedy: uzimaju najviše što mogu, pa se vraćaju (backtracking) ako ostatak obrasca ne odgovara. Zato `.*` zna da "pojede" više nego što želiš (vidi sledeću lekciju).
+## Validacija ili pretraga
+Za proveru cele vrednosti uvek koristi `^` i `$`. Bez njih regex pogađa i deo stringa, pa `/\d+/` prihvata `"abc123"`.
+## Praktični saveti
+Piši regex postepeno i testiraj na primerima. Za složen ulaz (HTML, e-pošta po standardu) regex nije pravi alat. Svaki specijalni znak koji želiš doslovno mora da se escape-uje sa `\`: `\.`, `\(`, `\?`.
 @points
-Pravljenje :: Literal `/obrazac/zastavice` ili `new RegExp("obrazac", "zastavice")` kad je obrazac dinamičan.
+Pravljenje :: Literal `/obrazac/flags` ili `new RegExp("obrazac", "flags")` kad je obrazac dinamičan.
 `regex.test(str)` :: Vraća `true` ili `false`. Najčešći način za validaciju.
 Klase znakova :: `\d` cifra, `\w` slovo, cifra ili `_` (samo ASCII), `\s` razmak, tab ili novi red, `.` bilo koji znak osim novog reda. Velika slova su negacija: `\D`, `\W`, `\S`.
 Skupovi :: `[abc]` jedan od znakova, `[a-z0-9]` opseg, `[^abc]` bilo šta osim navedenih.
-Sidra :: `^` početak, `$` kraj, `\b` granica reči. Bez sidara obrazac pogađa bilo gde u stringu.
-Kvantifikatori :: `*` nula ili više, `+` jedan ili više, `?` nula ili jedan, `{3}` tačno tri, `{2,4}` od dva do četiri.
-Grupe i alternacija :: `(ab)+` grupa, `a|b` ili. `(?:...)` je grupa bez hvatanja.
-Zastavice :: `i` ignoriše veličinu slova, `g` sva pogađanja, `m` `^` i `$` važe po redu, `u` pun Unicode.
+Anchors :: `^` početak, `$` kraj, `\b` granica reči. Bez anchors obrazac pogađa bilo gde u stringu.
+Quantifiers :: `*` nula ili više, `+` jedan ili više, `?` nula ili jedan, `{3}` tačno tri, `{2,4}` od dva do četiri.
+Grupe i alternation :: `(ab)+` grupa, `a|b` ili. `(?:...)` je non-capturing group.
+Flags :: `i` ignoriše veličinu slova, `g` sva pogađanja, `m` `^` i `$` važe po redu, `u` pun Unicode.
 Escape :: Specijalni znakovi `. * + ? ^ $ { } ( ) | [ ] \` traže `\` ispred. `\.` je prava tačka.
 @pitfalls
 - Validacija bez sidara: `/\d+/.test("abc123")` je `true`. Za celu vrednost koristi `^\d+$`.
-- `\w` ne pogađa č, ć, š, ž, đ. Za slova bilo kog jezika koristi `\p{L}` uz zastavicu `u`.
+- `\w` ne pogađa č, ć, š, ž, đ. Za slova bilo kog jezika koristi `\p{L}` uz flag `u`.
 - Regex nije za parsiranje HTML-a ni za savršenu validaciju e-pošte. Proveri samo osnovni oblik, a pravu proveru radi slanjem poruke.
 @code
 // test(): da ili ne
 console.log(/\d+/.test("abc123"), /^\d+$/.test("abc123"), /^\d+$/.test("123"));
 console.log(/hello/i.test("HeLLo svete"));
 
-// Klase i kvantifikatori
+// Character classes i quantifiers
 const telefon = /^\+?\d{2,3}[ -]?\d{6,9}$/;
 console.log(telefon.test("+381641234567"), telefon.test("064-123456"), telefon.test("12"));
 const ptt = /^\d{5}$/;
@@ -1109,7 +1306,7 @@ console.log(ptt.test("11000"), ptt.test("1100"));
 console.log(/^[a-z0-9_]{3,16}$/.test("ana_92"), /^[a-z0-9_]{3,16}$/.test("Ana!"));
 console.log(/[^aeiou]/.test("aei"), /[^aeiou]/.test("aeib"));
 
-// Sidra i granica reči
+// Anchors i granica reči
 console.log(/\bmaca\b/.test("crna maca spava"), /\bmaca\b/.test("macarone"));
 
 // Alternacija i grupe
@@ -1133,7 +1330,7 @@ A: Baca grešku
 A: `null`
 W: Bez sidara (`^` i `$`) obrazac pogađa bilo gde u stringu, a "123" na kraju sadrži cifre. Za proveru cele vrednosti koristi `/^\d+$/`.
 @quiz
-Q: Koja zastavica pronalazi sva pogađanja umesto samo prvog?
+Q: Koji flag pronalazi sva pogađanja umesto samo prvog?
 A: `i`
 A*: `g`
 A: `m`
@@ -1153,7 +1350,7 @@ A: `true true true`
 A*: `true false true`
 A: `false false true`
 A: `true false false`
-W: Obrazac traži veliko slovo pa mala. Zastavica `i` ignoriše veličinu slova, pa onda "ANA" prolazi.
+W: Obrazac traži veliko slovo pa mala. Flag `i` ignoriše veličinu slova, pa onda "ANA" prolazi.
 @quiz
 Q: Šta pogađa `\s` u regex-u?
 A: Samo razmak
@@ -1162,21 +1359,42 @@ A*: Razmak, tab, novi red i ostale beline
 A: Specijalne znakove
 W: `\s` je klasa za sve belinе. `\S` je njena negacija.
 
-=== regex2 | 4 | Regex u praksi: match, replace i grupe
+=== regex2 | 4 | Regex in practice: match, replace & groups
 @intro
-U praksi ti često ne treba samo da/ne, već i da izvučeš delove teksta ili da ga preoblikuješ. Tu stupaju na scenu grupe hvatanja i `replace`.
+U praksi ti često ne treba samo da/ne, već i da izvučeš delove teksta ili da ga preoblikuješ. Tu stupaju na scenu capture groups i `replace`.
+@how
+## Metode i šta vraćaju
+- `re.test(s)` vraća boolean.
+- `s.match(re)` bez flag `g` vraća prvi match sa capture groups (ili `null`), a sa `g` vraća array svih matcheva, bez grupa.
+- `s.matchAll(re)` vraća iterator svih matcheva sa grupama i pozicijama (traži flag `g`).
+- `s.replace(re, x)` i `s.replaceAll(re, x)` menjaju tekst, a `s.split(re)` deli.
+## Capture groups
+Zagrade hvataju deo poklapanja. Rezultat je array: `m[0]` je ceo match, `m[1]` prva grupa i tako dalje. Named groups `(?<god>\d{4})` čitaju se kao `m.groups.god`, što je čitljivije kad grupa ima više.
+## Replace
+U zameni `$1`, `$2` ili `$<ime>` ubacuju grupe, a `$&` ceo match. Kad ti treba logika, prosledi funkciju koja prima match i grupe i vraća zamenu:
+```
+"cena 100".replace(/\d+/g, n => n * 2);   // "cena 200"
+```
+## Greedy i lazy
+`.*` uzima koliko može (greedy), `.*?` koliko najmanje (lazy). Za tekst između dva graničnika skoro uvek hoćeš lazy.
+## Lookahead
+`a(?=b)` pogađa `a` samo ako iza njega sledi `b`, bez da `b` uđe u match. `(?!b)` je negacija. Koristi se za formatiranje brojeva i validaciju lozinki.
+## Flag g i lastIndex
+Regex objekat sa flag `g` pamti poziciju (`lastIndex`) između poziva `test` i `exec`. Ponovljeni `test` na istom regex objektu zato daje naizmenično `true` i `false`. Za validaciju ne koristi `g`.
+## Escape korisničkog unosa
+Ako praviš regex iz teksta koji unosi korisnik, escape-uj specijalne znakove: `s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")`.
 @points
 `str.match(re)` :: Bez `g`: prvo pogađanje sa grupama (ili `null`). Sa `g`: niz svih pogađanja, ali bez grupa.
 `str.matchAll(re)` :: Sva pogađanja sa grupama i pozicijama (traži `g`). Vraća iterator, pretvori ga sa `[...]`.
-Grupe hvatanja :: `(\d+)` hvata deo teksta. Imenovane: `(?<god>\d{4})` dostupne kao `m.groups.god`.
+Capture groups :: `(\d+)` hvata deo teksta. Imenovane: `(?<god>\d{4})` dostupne kao `m.groups.god`.
 `str.replace(re, zamena)` :: U zameni možeš koristiti `$1`, `$<ime>` i `$&`. Umesto stringa može funkcija za složeniju logiku. `replaceAll` traži `g`.
 `str.split(re)` :: Deljenje po obrascu, npr. `split(/\s+/)`.
-Pohlepno i lenjo :: `.*` uzima što više, `.*?` što manje. Lenjo je obično ono što želiš između dva graničnika.
+Greedy i lazy :: `.*` uzima što više, `.*?` što manje. Lazy je obično ono što želiš između dva graničnika.
 Lookahead :: `a(?=b)` pogađa `a` samo ako sledi `b`, `a(?!b)` ako ne sledi. Koristi se npr. za formatiranje brojeva.
 `lastIndex` :: Regex sa `g` pamti poziciju, pa ponovljeni `test()` na istom objektu daje naizmenične rezultate.
 @pitfalls
-- `re.test()` sa zastavicom `g` zbog `lastIndex` daje neočekivane rezultate. Za validaciju ne koristi `g`.
-- Ugnežđeni kvantifikatori poput `(a+)+` mogu da zamrznu stranicu na lošem ulazu (katastrofalan backtracking). Drži obrasce jednostavnim.
+- `re.test()` sa flag-om `g` zbog `lastIndex` daje neočekivane rezultate. Za validaciju ne koristi `g`.
+- Nested quantifiers poput `(a+)+` mogu da zamrznu stranicu na lošem ulazu (katastrofalan backtracking). Drži obrasce jednostavnim.
 @code
 const tekst = "Račun 2024-03-15: 1250 din; račun 2024-04-02: 890 din.";
 
@@ -1208,7 +1426,7 @@ console.log("ana marko jelena".replace(/\b\p{L}/gu, c => c.toUpperCase()));
 // split
 console.log("a,  b ;c   d".split(/[,;\s]+/));
 
-// pohlepno naspram lenjo
+// greedy naspram lazy
 const html = "<b>jedan</b> i <b>dva</b>";
 console.log(html.match(/<b>.*<\/b>/)[0]);
 console.log(html.match(/<b>.*?<\/b>/)[0]);
@@ -1220,7 +1438,7 @@ console.log("1234567".replace(/\B(?=(\d{3})+(?!\d))/g, "."));
 const re = /a/g;
 console.log(re.test("a"), re.test("a"), re.test("a"));
 @quiz
-Q: Koja metoda vraća SVA pogađanja zajedno sa grupama hvatanja?
+Q: Koja metoda vraća SVA pogađanja zajedno sa capture groups?
 A: `str.match(/re/g)`
 A: `str.match(/re/)`
 A*: `str.matchAll(/re/g)`
@@ -1232,7 +1450,7 @@ A*: `<b>a</b>`
 A: `<b>a</b> <b>b</b>`
 A: `<b>b</b>`
 A: Ništa
-W: `.*?` je lenjo, pa staje na prvom `</b>`. Pohlepno `.*` bi uzelo sve do poslednjeg.
+W: `.*?` je lazy, pa staje na prvom `</b>`. Greedy `.*` bi uzelo sve do poslednjeg.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: console.log("2024-03-15".replace(/(\d+)-(\d+)-(\d+)/, "$3/$2/$1"));
@@ -1240,7 +1458,7 @@ A: `2024/03/15`
 A: `15-03-2024`
 A*: `15/03/2024`
 A: `$3/$2/$1`
-W: `$1`, `$2`, `$3` u zameni su grupe hvatanja, ovde redom godina, mesec i dan.
+W: `$1`, `$2`, `$3` u zameni su capture groups, ovde redom godina, mesec i dan.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: console.log("a1b22c333".match(/\d+/g));
@@ -1248,24 +1466,35 @@ A: `[ '1' ]`
 A*: `[ '1', '22', '333' ]`
 A: `[ '1', '2', '2', '3', '3', '3' ]`
 A: `null`
-W: Sa zastavicom `g` `match` vraća niz svih pogađanja, a `\d+` hvata cele nizove cifara.
+W: Sa flag-om `g` `match` vraća niz svih pogađanja, a `\d+` hvata cele nizove cifara.
 @quiz
-Q: Koji izraz zamenjuje SVA pojavljivanja "a" sa "b"?
+Q: Koji expression zamenjuje SVA pojavljivanja "a" sa "b"?
 A: `str.replace("a", "b")`
 A*: `str.replaceAll("a", "b")`
 A: `str.replace(/a/, "b")`
 A: `str.match("a", "b")`
 W: `replace` sa stringom i regex-om bez `g` menjaju samo prvo pojavljivanje. Uz `replaceAll` ili `replace(/a/g, "b")` menjaju se sva.
 
-=== loops | 5 | Klasične petlje: for, while, do...while
+=== loops | 5 | Loops: for, while, do...while
 @intro
 Petlje ponavljaju blok koda dok je uslov tačan. Bira se prema tome da li znaš broj ponavljanja ili čekaš na uslov.
+@how
+## Tri oblika
+`for (init; uslov; korak)` je za poznat broj ponavljanja. `while (uslov)` proverava uslov pre svake iteracije. `do { } while (uslov)` proverava posle, pa se telo izvrši bar jednom.
+## Redosled u for petlji
+Init se izvrši jednom, zatim se proverava uslov. Ako je tačan, izvršava se telo, pa korak, pa opet uslov. Kad koristiš `let i`, svaka iteracija dobija svoju kopiju promenljive `i` (block scope), što je bitno za closures.
+## break, continue i labels
+`break` izlazi iz petlje, `continue` preskače ostatak iteracije. Labela (`spoljna:`) omogućava `break spoljna` iz ugnežđene petlje.
+## Tipične greške
+Off-by-one (`<` ili `<=`), menjanje arraya dok se po njemu iterira i zaboravljen korak (beskonačna petlja). Beskonačna petlja blokira jedini thread (vidi Event Loop) i zamrzava stranicu.
+## Kada ne koristiti for
+Za transformacije nad arrayima (`map`, `filter`, `reduce`) deklarativne metode su čitljivije. Klasična `for` petlja ostaje dobra kad ti treba indeks, korak različit od 1, rani izlaz ili performanse u kritičnim delovima.
 @points
 `for` :: `for (init; uslov; korak)`. Najbolji kad znaš broj iteracija ili ti treba indeks.
 `while` :: Proverava uslov pre svake iteracije, može da se ne izvrši nijednom.
 `do...while` :: Proverava uslov posle iteracije, pa se telo izvrši bar jednom.
 `break` i `continue` :: `break` izlazi iz petlje, `continue` preskače ostatak trenutne iteracije.
-Labele :: `spoljna: for (...)` i `break spoljna` izlaze iz ugnežđenih petlji odjednom.
+Labele :: `spoljna: for (...)` i `break spoljna` izlaze iz nested petlji odjednom.
 @pitfalls
 - Zaboravljen korak ili pogrešan uslov daje beskonačnu petlju koja zamrzava karticu. Pazi i u ovom playground-u.
 - Greška za jedan (off-by-one): `<` ili `<=`, indeksi počinju od `0`.
@@ -1300,7 +1529,7 @@ for (let i = 1; i <= 10; i++) {
 // unazad, sa korakom
 for (let i = 10; i > 0; i -= 3) console.log("dole:", i);
 
-// labela za izlaz iz ugnežđene petlje
+// labela za izlaz iz nested petlje
 spoljna: for (let a = 1; a <= 3; a++) {
   for (let b = 1; b <= 3; b++) {
     if (a * b === 4) break spoljna;
@@ -1336,17 +1565,28 @@ A: `i < niz.length - 1`
 A: `i <= niz.length - 2`
 W: Indeksi idu od 0 do `length - 1`. Uslov `<=` bi otišao jedan korak predaleko (greška za jedan).
 
-=== forof | 5 | for...of i for...in
+=== forof | 5 | for...of & for...in
 @intro
 Dve petlje sa sličnim imenom rade različite stvari: `for...of` ide kroz vrednosti, `for...in` kroz ključeve.
+@how
+## Dve petlje, dva cilja
+`for...of` iterira vrednosti iterable objekata (array, string, Map, Set, generatori). `for...in` iterira enumerable ključeve objekta, uključujući inherited iz prototype chain-a.
+## Iterable
+Objekat je iterable ako ima metodu `[Symbol.iterator]`. Array, string, Map i Set je imaju, a običan objekat `{}` nema, zato `for (const x of obj)` baca `TypeError`. Za objekte koristi `Object.keys`, `Object.values` ili `Object.entries`.
+## Zašto for...of za arrayeve
+Daje vrednosti, podržava `break`, `continue` i `await`, a sa `.entries()` daje i indeks: `for (const [i, v] of arr.entries())`.
+## Zašto ne for...in za arrayeve
+Ključevi su stringovi (`"0"`, `"1"`), a petlja hvata i inherited enumerable property-je. Za objekte ima smisla, ali i tu je `Object.entries` jasniji.
+## forEach, break i await
+`forEach` ne podržava `break` i ne čeka `async` callback. Ako ti trebaju, koristi `for...of`.
 @points
-`for...of` :: Iterira vrednosti iterabilnih struktura: nizova, stringova, `Map`, `Set`. Podržava `break`, `continue` i `await`.
+`for...of` :: Iterira vrednosti iterable struktura: nizova, stringova, `Map`, `Set`. Podržava `break`, `continue` i `await`.
 `.entries()` :: `for (const [i, v] of niz.entries())` daje indeks i vrednost.
-`for...in` :: Iterira enumerable ključeve objekta (kao stringove), uključujući nasleđene. Za obične objekte, ne za nizove.
-Objekti i `for...of` :: Obični objekti nisu iterabilni. Koristi `Object.entries(obj)`.
+`for...in` :: Iterira enumerable ključeve objekta (kao stringove), uključujući inherited. Za obične objekte, ne za nizove.
+Objekti i `for...of` :: Obični objekti nisu iterable. Koristi `Object.entries(obj)`.
 `forEach` :: Nema `break`, a ni `await` ne čeka. Kad ti trebaju, koristi `for...of`.
 @pitfalls
-- `for...in` nad nizom daje indekse kao stringove i može uhvatiti nasleđena svojstva.
+- `for...in` nad nizom daje indekse kao stringove i može uhvatiti inherited properties.
 @code
 const voce = ["jabuka", "kruška", "šljiva"];
 for (const v of voce) console.log(v);
@@ -1362,7 +1602,7 @@ const osoba = { ime: "Ana", godine: 28, grad: "Beograd" };
 for (const kljuc in osoba) console.log(kljuc, "=", osoba[kljuc]);
 for (const [k, v] of Object.entries(osoba)) console.log(`${k}: ${v}`);
 
-// obični objekat nije iterabilan
+// obični objekat nije iterable
 try { for (const x of osoba) {} } catch (e) { console.log(e.message); }
 
 // for...in nad nizom: zamka
@@ -1402,24 +1642,41 @@ W: `Object.entries` daje parove `[ključ, vrednost]`, a destrukturiranje ih razd
 Q: Šta se desi sa `for (const x of { a: 1 }) {}`?
 A: Iterira ključ `a`
 A: Ne radi ništa
-A*: Baca `TypeError` jer objekat nije iterabilan
+A*: Baca `TypeError` jer objekat nije iterable
 A: Iterira vrednost `1`
 W: Obični objekti nemaju iterator. Koristi `Object.keys`, `Object.values` ili `Object.entries`.
 
-=== functions | 6 | Funkcije: deklaracija, izraz i arrow
+=== functions | 6 | Functions: declaration, expression & arrow
 @intro
 Funkcije su osnovna jedinica koda u JavaScript-u i vrednosti kao i sve ostalo: mogu da se čuvaju u promenljivama, prosleđuju drugim funkcijama i vraćaju iz njih.
+@how
+## Tri načina
+- **Function declaration**: `function f() {}`. Hoisted u celini, može da se pozove pre definicije.
+- **Function expression**: `const f = function () {}`. Dostupna tek posle te linije.
+- **Arrow function**: `const f = () => {}`. Kratka sintaksa, nema sopstveni `this`, `arguments` ni konstruktor.
+## Parametri i argumenti
+Parametri su imena u definiciji, argumenti su vrednosti pri pozivu. JavaScript ne proverava broj argumenata: višak se ignoriše, a manjak postaje `undefined`. Default parametri važe samo za `undefined`. Rest parametar `...args` skuplja ostatak u pravi array.
+## Return value
+Funkcija bez `return` (ili sa praznim `return`) vraća `undefined`. Arrow funkcija bez `{}` implicitno vraća expression: `x => x * 2`. Sa `{}` moraš eksplicitno da napišeš `return`.
+## Funkcije su vrednosti
+Možeš ih čuvati u promenljivama, prosleđivati i vraćati. Funkcija koja prima ili vraća funkciju je higher-order function. Funkcija prosleđena radi kasnijeg poziva zove se callback.
+## Pure functions i side effects
+Pure function za isti ulaz uvek vraća isti izlaz i ne menja ništa van sebe. Side effect je sve što funkcija radi osim vraćanja vrednosti: ispis, izmena globalne promenljive ili argumenta, mrežni poziv. Pure funkcije se lakše testiraju i kombinuju, a side effects drži na ivicama programa.
+## Argumenti po vrednosti i po referenci
+Primitives se prosleđuju kao kopije, a objects kao reference. Funkcija koja menja property prosleđenog objekta menja original.
+## Arrow ili obična funkcija
+Arrow za callbacks i kratke funkcije. Obična funkcija ili metoda kad ti treba sopstveni `this` ili hoisting.
 @points
-Deklaracija :: `function zbir(a, b) { return a + b; }`. Podiže se (hoisting), pa može da se pozove pre definicije.
+Deklaracija :: `function zbir(a, b) { return a + b; }`. Hoisted je (hoisting), pa može da se pozove pre definicije.
 Function expression :: `const zbir = function (a, b) { ... }`. Dostupna tek posle linije definicije.
 Arrow funkcija :: `const zbir = (a, b) => a + b;` Kratka sintaksa i bez sopstvenog `this`. Za objekat kao rezultat stavi ga u zagrade: `() => ({ a: 1 })`.
 Parametri :: Podrazumevane vrednosti `(a, b = 10)`, rest `(...args)`, destrukturiranje `({ ime, godine })`. Funkcija bez `return` vraća `undefined`.
-Funkcije kao vrednosti :: Prosleđuju se kao callback (`niz.map(fn)`), vraćaju se iz drugih funkcija i čuvaju u objektima. Funkcija koja prima ili vraća funkciju je funkcija višeg reda.
-Čiste funkcije :: Isti ulaz daje isti izlaz i nema nuspojava. Lakše se testiraju i ponovo koriste.
-IIFE :: `(() => { ... })()` odmah pozvana funkcija, za privatni doseg ili `async` kod na vrhu skripte.
+Funkcije kao vrednosti :: Prosleđuju se kao callback (`niz.map(fn)`), vraćaju se iz drugih funkcija i čuvaju u objektima. Funkcija koja prima ili vraća funkciju je higher-order function.
+Čiste funkcije :: Isti ulaz daje isti izlaz i nema side effects. Lakše se testiraju i ponovo koriste.
+IIFE :: `(() => { ... })()` odmah pozvana funkcija, za privatni scope ili `async` kod na vrhu skripte.
 @pitfalls
-- Arrow funkcija sa `{}` mora imati eksplicitan `return`. Bez vitičastih zagrada vraća vrednost izraza.
-- Podrazumevana vrednost važi samo za `undefined`: `f(null)` ne koristi default.
+- Arrow funkcija sa `{}` mora imati eksplicitan `return`. Bez vitičastih zagrada vraća vrednost expression-a.
+- Default value važi samo za `undefined`: `f(null)` ne koristi default.
 - Više od tri do četiri parametra zameni jednim objektom sa destrukturiranjem.
 @code
 // Tri načina zapisa iste funkcije
@@ -1477,7 +1734,7 @@ A: `5`
 A*: `null`
 A: `undefined`
 A: Grešku
-W: Podrazumevana vrednost se koristi samo kad je argument `undefined`. `null` je validna vrednost i ostaje.
+W: Default value se koristi samo kad je argument `undefined`. `null` je validna vrednost i ostaje.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: const f = (a, b = 2) => a + b;
@@ -1496,7 +1753,7 @@ A: `radi function`
 A*: `radi undefined`
 A: `ReferenceError`
 A: `undefined undefined`
-W: Deklaracija funkcije se podiže cela. Kod `var b` podiže se samo promenljiva (`undefined`), a funkcija se dodeljuje tek na svojoj liniji.
+W: Deklaracija funkcije je hoisted cela. Kod `var b` hoisted je samo promenljiva (`undefined`), a funkcija se dodeljuje tek na svojoj liniji.
 @quiz
 Q: Šta je callback funkcija?
 A: Funkcija koja poziva samu sebe
@@ -1514,14 +1771,37 @@ A*: `0 3`
 A: `NaN 3`
 W: Rest parametar skuplja sve argumente u pravi niz, prazan ako ih nema.
 
-=== closures | 6 | Closure i doseg funkcija
+=== closures | 6 | Closures
 @intro
-Closure znači da funkcija pamti promenljive iz mesta gde je napravljena, čak i kad se pozove kasnije i negde drugde. Na tome stoje callback-ovi, rukovaoci događaja, memoizacija i "privatno" stanje.
+Closure znači da funkcija pamti promenljive iz mesta gde je napravljena, čak i kad se pozove kasnije i negde drugde. Na tome stoje callback-ovi, handleri event-a, memoizacija i "privatno" stanje.
+@how
+## Lexical scope
+Funkcija vidi promenljive iz scope-a u kome je *napisana*, a ne iz scope-a odakle je pozvana. To se zove lexical scope.
+## Šta je closure
+Kad funkcija nastane, ona zadržava vezu sa svojim spoljašnjim scope-om. Ta veza ostaje i nakon što spoljašnja funkcija završi, pa unutrašnja i dalje čita i menja te promenljive. Funkcija zajedno sa svojim okruženjem je closure.
+```
+function napraviBrojac() {
+  let n = 0;                 // živi dokle god postoji vraćena funkcija
+  return () => ++n;
+}
+const a = napraviBrojac();
+a(); a();                    // 1, pa 2
+```
+Svaki poziv `napraviBrojac()` pravi novo okruženje, pa su brojači nezavisni.
+## Čemu služi
+- **Privatno stanje**: promenljiva nije dostupna spolja.
+- **Function factories**: `puta(2)` ili `pozdravi("Zdravo")` vraćaju specijalizovanu funkciju.
+- **Callbacks i event handlers** pamte kontekst u kome su napravljeni.
+- **Memoization, once, debounce** čuvaju stanje između poziva.
+## Closure čuva promenljivu, ne vrednost
+Ako se promenljiva promeni posle pravljenja funkcije, funkcija vidi novu vrednost. To je i razlog klasičnog problema sa `var` u petlji: sve funkcije dele jednu `i`.
+## Memorija
+Spoljašnje promenljive ostaju u memoriji dok god postoji funkcija koja ih koristi. Event listener koji drži velike podatke, a nikad se ne ukloni, može da izazove memory leak.
 @points
-Leksički doseg :: Funkcija vidi promenljive iz okruženja u kome je napisana, a ne odakle je pozvana.
+Lexical scope :: Funkcija vidi promenljive iz okruženja u kome je napisana, a ne odakle je pozvana.
 Closure :: Unutrašnja funkcija zadržava vezu sa promenljivama spoljašnje, čak i posle njenog završetka.
 Privatno stanje :: Promenljiva koju spolja niko ne može da dotakne, osim kroz funkcije koje je "zatvaraju".
-Fabrike funkcija :: `napraviBrojac()`, `puta(n)`: svaki poziv pravi nezavisan closure.
+Function factories :: `napraviBrojac()`, `puta(n)`: svaki poziv pravi nezavisan closure.
 Memoizacija :: Keširanje rezultata skupih poziva u closure-u.
 Petlje :: `var` deli jednu promenljivu (vidi lekciju o promenljivama), `let` pravi novu u svakoj iteraciji.
 @pitfalls
@@ -1591,7 +1871,7 @@ W: Closure pamti promenljivu `x`, a ne njenu vrednost iz trenutka pravljenja fun
 @quiz
 Q: Kako closure omogućava privatno stanje u `napraviBrojac`?
 A: Promenljiva `n` je označena kao `private`
-A*: `n` postoji samo u dosegu spoljne funkcije, a vraćene funkcije su jedini način da joj se pristupi
+A*: `n` postoji samo u scope-u spoljne funkcije, a vraćene funkcije su jedini način da joj se pristupi
 A: `n` se čuva u posebnoj memoriji
 A: Ne omogućava, `n` se može čitati spolja
 W: Nema objekta koji drži `n`. Postoji samo u okruženju funkcije `napraviBrojac`, kojem pristupaju samo `inc`, `dec` i `get`.
@@ -1624,9 +1904,32 @@ A: Kad se koristi `let`
 A: Kad funkcija vraća objekat
 W: Promenljive iz closure-a ostaju u memoriji dok god postoji funkcija koja ih koristi.
 
-=== this | 6 | this, call, apply i bind
+=== this | 6 | this, call, apply & bind
 @intro
 Vrednost `this` zavisi od toga KAKO je funkcija pozvana, a ne gde je napisana (osim kod arrow funkcija). Najčešći izvor zabune su metode koje se prosleđuju kao callback.
+@how
+## Pravilo
+Vrednost `this` se određuje u trenutku *poziva*, a ne definicije (osim kod arrow functions):
+- `obj.metoda()`: `this` je `obj`.
+- `fn()`: `this` je `undefined` u strict mode-u (moduli, klase), inače globalni objekat.
+- `fn.call(x)`, `fn.apply(x)`, `fn.bind(x)`: `this` je `x`.
+- `new F()`: `this` je novi objekat.
+## Gubitak this
+Kad metodu izdvojiš iz objekta, ostaje bez konteksta:
+```
+const f = obj.metoda;
+f();                      // this više nije obj
+setTimeout(obj.metoda);   // isto
+```
+Rešenja: `obj.metoda.bind(obj)`, wrapper `() => obj.metoda()` ili arrow function kao class field.
+## Arrow functions
+Nemaju svoj `this`, već koriste `this` iz okolnog scope-a (lexical this). Dobre su za callback unutar metode (`setTimeout(() => this.x++)`), ali loše kao metode objekta (nemaju `this` na taj objekat).
+## call, apply, bind
+`call(ctx, a, b)` poziva odmah sa argumentima jedan po jedan, `apply(ctx, [a, b])` sa arrayom, a `bind(ctx)` vraća novu funkciju za kasnije.
+## Event listeners
+U običnoj funkciji kao listener `this` je element (isto što i `e.currentTarget`). U arrow funkciji nije. Zato se često koristi `e.currentTarget`.
+## Praktično
+Moderni kod izbegava `this` gde može (pure funkcije, closures). Potreban je kod klasa i metoda objekata.
 @points
 Poziv metode :: `obj.metoda()` daje `this === obj`.
 Obična funkcija :: `fn()` daje `this === undefined` u strict režimu (moduli, klase) ili globalni objekat u običnom režimu.
@@ -1681,7 +1984,7 @@ A: Objekat na kome je funkcija pozvana
 A*: Isti `this` kao u okruženju u kome je arrow funkcija napisana
 A: Uvek `window`
 A: Uvek `undefined`
-W: Arrow funkcije nemaju svoj `this`. Preuzimaju ga leksički, iz spoljašnjeg dosega.
+W: Arrow funkcije nemaju svoj `this`. Preuzimaju ga iz spoljašnjeg scope-a (lexical this).
 @quiz
 Q: Zašto `setTimeout(obj.metoda, 100)` često ne radi kako treba?
 A: `setTimeout` ne prima funkcije
@@ -1716,21 +2019,40 @@ A: Listener ne može biti metoda
 A: `broj++` nije dozvoljeno
 W: Metoda je izdvojena iz objekta, pa gubi `this`. U listeneru bi `this` bio element, a ne tvoj objekat.
 
-=== recursion | 6 | Rekurzija
+=== recursion | 6 | Recursion
 @intro
-Rekurzija je funkcija koja poziva samu sebe. U praksi je najkorisnija za podatke koji su po prirodi ugnežđeni: meniji, komentari, fascikle, JSON stabla.
+Rekurzija je funkcija koja poziva samu sebe. U praksi je najkorisnija za podatke koji su po prirodi nested: meniji, komentari, fascikle, JSON stabla.
+@how
+## Kako radi
+Svaki poziv funkcije dobija svoj frame na call stack-u, sa sopstvenim parametrima i promenljivama. Rekurzivni pozivi se nagomilavaju na stack-u dok ne stigneš do base case-a, a onda se vraćaju jedan po jedan.
+```
+faktorijel(3)
+  → 3 * faktorijel(2)
+        → 2 * faktorijel(1)
+              → 1          // base case
+```
+## Dva dela
+1. **Base case**: uslov kad se staje, bez daljeg poziva.
+2. **Recursive step**: poziv sa manjim ili jednostavnijim problemom, koji se približava base case-u.
+Bez base case-a, ili bez napredovanja ka njemu, stack se prepuni: `RangeError: Maximum call stack size exceeded`.
+## Gde je prirodna
+Strukture nepoznate dubine: stablo menija, komentari sa odgovorima, fascikle, ugnežđeni JSON. Svaki node se obrađuje istim kodom, a deca rekurzivno.
+## Ograničenja
+Dubina je ograničena (otprilike hiljade do desetine hiljada poziva), a JavaScript nema pouzdanu tail call optimizaciju. Za veoma duboke strukture koristi petlju sa sopstvenim stack-om (array).
+## Performanse i memoization
+Naivna rekurzija može da ponavlja isti posao eksponencijalno (npr. Fibonacci). Keširanje rezultata (memoization) to svodi na linearno.
 @points
-Dva dela :: Osnovni slučaj (kad stati) i rekurzivni korak (poziv sa manjim problemom). Bez osnovnog slučaja dobijaš `RangeError: Maximum call stack size exceeded`.
-Kad koristiti :: Stabla i ugnežđene strukture nepoznate dubine. Za obične nizove petlja ili `reduce` su jednostavniji.
-Dubina :: Svaki poziv zauzima mesto na steku, pa dubina od više hiljada puca. Za velike podatke koristi petlju sa sopstvenim stekom.
-Gotove alternative :: `niz.flat(Infinity)` za spljoštavanje, `structuredClone` za duboku kopiju.
+Dva dela :: base case (kad stati) i recursive step (poziv sa manjim problemom). Bez base case-a dobijaš `RangeError: Maximum call stack size exceeded`.
+Kad koristiti :: Stabla i nested strukture nepoznate dubine. Za obične nizove petlja ili `reduce` su jednostavniji.
+Dubina :: Svaki poziv zauzima mesto na stack-u, pa dubina od više hiljada puca. Za velike podatke koristi petlju sa sopstvenim stack-om.
+Gotove alternative :: `niz.flat(Infinity)` za spljoštavanje, `structuredClone` za deep copy.
 @pitfalls
 - Rekurzija bez memoizacije može biti eksponencijalno spora (npr. naivni Fibonacci).
 @code
-// 1) Osnovni slučaj + korak
+// 1) base case + korak
 function faktorijel(n) {
-  if (n <= 1) return 1;            // osnovni slučaj
-  return n * faktorijel(n - 1);    // rekurzivni korak
+  if (n <= 1) return 1;            // base case
+  return n * faktorijel(n - 1);    // recursive step
 }
 console.log(faktorijel(5));
 
@@ -1762,7 +2084,7 @@ function prebroj(stavke) {
 }
 console.log("ukupno stavki:", prebroj(meni));
 
-// 3) Putanje svih ključeva ugnežđenog objekta
+// 3) Putanje svih ključeva nested objekta
 const ugnezdeno = { a: 1, b: { c: 2, d: { e: 3 } } };
 function sviKljucevi(obj, prefiks = "") {
   const rez = [];
@@ -1774,7 +2096,7 @@ function sviKljucevi(obj, prefiks = "") {
 }
 console.log(sviKljucevi(ugnezdeno));
 
-// 4) Zaštita: bez osnovnog slučaja
+// 4) Zaštita: bez base case-a
 function bezKraja(n) { return bezKraja(n + 1); }
 try { bezKraja(0); } catch (e) { console.log(e.name + ": " + e.message); }
 
@@ -1786,12 +2108,12 @@ const memo = {};
 const fibM = n => n < 2 ? n : (memo[n] ??= fibM(n - 1) + fibM(n - 2));
 console.log(fibM(50));
 @quiz
-Q: Šta se desi ako rekurzivna funkcija nema osnovni slučaj?
+Q: Šta se desi ako rekurzivna funkcija nema base case?
 A: Vrati `undefined`
-A*: Dok se stek ne prepuni, pa se baci `RangeError`
+A*: Dok se stack ne prepuni, pa se baci `RangeError`
 A: Izvrši se tačno jednom
-A: Pregledač je automatski prekine bez greške
-W: Svaki poziv ostaje na steku čekajući sledeći. Kad stek pređe ograničenje, JavaScript baca `RangeError: Maximum call stack size exceeded`.
+A: Browser je automatski prekine bez greške
+W: Svaki poziv ostaje na stack-u čekajući sledeći. Kad stack pređe ograničenje, JavaScript baca `RangeError: Maximum call stack size exceeded`.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: const f = n => n <= 1 ? 1 : n * f(n - 1);
@@ -1800,22 +2122,35 @@ A: `120 0`
 A*: `120 1`
 A: `24 1`
 A: `120 undefined`
-W: Osnovni slučaj `n <= 1` vraća `1`, pa je `f(0)` isto `1`, a `f(5)` je 5·4·3·2·1.
+W: Base case `n <= 1` vraća `1`, pa je `f(0)` isto `1`, a `f(5)` je 5·4·3·2·1.
 @quiz
 Q: Kada je rekurzija pravi izbor?
 A: Za svaku petlju
-A*: Za ugnežđene podatke nepoznate dubine (stabla, meniji, fascikle)
+A*: Za nested podatke nepoznate dubine (stabla, meniji, fascikle)
 A: Kad se traži najbrže izvršavanje
 A: Samo za matematičke funkcije
-W: Za obične nizove petlja je jednostavnija i bez rizika od prepunjenja steka.
+W: Za obične nizove petlja je jednostavnija i bez rizika od prepunjenja stack-a.
 
-=== arrays | 7 | Osnovne metode nizova
+=== arrays | 7 | Arrays: basic methods
 @intro
 Nizovi imaju metode koje menjaju original (mutiraju) i one koje vraćaju novi niz. Razlikuj ih, jer mutacije su čest izvor grešaka.
+@how
+## Mutating i non-mutating metode
+Najbitnija podela: mutating metode menjaju original (`push`, `pop`, `shift`, `unshift`, `splice`, `sort`, `reverse`, `fill`), a non-mutating vraćaju nov array (`slice`, `concat`, `map`, `filter`, `flat`, `toSorted`, `toSpliced`, `with`). Mešanje ove dve grupe uzrok je većine bagova.
+## Dodavanje i uklanjanje
+`push` i `pop` rade na kraju (brzo), `unshift` i `shift` na početku (sporije jer pomeraju sve elemente). `push` vraća novu dužinu, a `pop` uklonjeni element.
+## slice i splice
+`slice(od, do)` samo čita i vraća deo arraya (kraj nije uključen). `splice(od, brisanje, ...novo)` menja array: briše, ubacuje ili zamenjuje, i vraća obrisane elemente.
+## Pretraga
+`includes(x)` vraća boolean, a `indexOf(x)` poziciju ili `-1`. Oba koriste strict equality. Za objekte ti treba `find` ili `some` sa callbackom.
+## Kopija je shallow
+`[...a]` i `a.slice()` prave novi array, ali elementi koji su objekti ostaju deljeni. Za deep copy koristi `structuredClone(a)`.
+## length i indeksi
+`length` je uvek za 1 veći od poslednjeg indeksa. `arr.at(-1)` je poslednji element. Postavljanje `arr.length = 0` prazni array.
 @points
 `push` / `pop` :: Dodaje / uklanja na kraju. `push` vraća novu dužinu, `pop` uklonjeni element.
 `unshift` / `shift` :: Isto, ali na početku. Sporije jer pomeraju sve elemente.
-`slice(od, do)` :: Vraća deo niza, ne menja original. `slice()` bez argumenata pravi plitku kopiju.
+`slice(od, do)` :: Vraća deo niza, ne menja original. `slice()` bez argumenata pravi shallow copy.
 `splice(od, brisanje, ...novo)` :: Menja original: briše, ubacuje ili zamenjuje. Vraća obrisane elemente.
 `concat` i spread :: Spajanje u novi niz: `a.concat(b)` ili `[...a, ...b]`.
 `includes` / `indexOf` :: Provera prisustva / pozicija (`-1` ako nema). `includes` ispravno radi sa `NaN`.
@@ -1882,25 +2217,39 @@ A*: `true -1 3`
 A: `2 -1 3`
 W: `indexOf` vraća `-1` kad elementa nema, a `at(-1)` je poslednji element.
 @quiz
-Q: Koji je ispravan način za plitku kopiju niza?
+Q: Koji je ispravan način za shallow copy niza?
 A: `const b = a`
 A*: `const b = [...a]`
 A: `const b = a.length`
 A: `const b = a.push()`
 W: `const b = a` samo pravi drugo ime za isti niz. Spread ili `a.slice()` prave novi niz.
 
-=== itermethods | 7 | forEach, map i filter
+=== itermethods | 7 | forEach, map & filter
 @intro
-Metode višeg reda primaju funkciju i primenjuju je na svaki element. Zamenjuju većinu ručnih `for` petlji i dobro se lančaju.
+Higher-order metode primaju funkciju i primenjuju je na svaki element. Zamenjuju većinu ručnih `for` petlji i dobro se lančaju.
+@how
+## Zajednički princip
+`forEach`, `map` i `filter` primaju callback koji se poziva jednom za svaki element, sa argumentima `(element, index, array)`. Ne menjaju original (osim ako ga ti menjaš u callbacku).
+- `forEach`: izvršava callback radi side effects i vraća `undefined`.
+- `map`: vraća nov array iste dužine, gde je svaki element rezultat callbacka.
+- `filter`: vraća nov array samo sa elementima za koje callback vrati truthy.
+## Chaining
+Pošto `map` i `filter` vraćaju array, mogu da se lančaju: `users.filter(u => u.active).map(u => u.name)`. Čita se kao opis transformacije.
+## Pogrešna upotreba
+`map` čiji se rezultat ne koristi je zloupotreba (koristi `forEach` ili `for...of`). Zaboravljen `return` u callbacku sa `{}` daje array od `undefined`.
+## parseInt zamka
+`["1","2","3"].map(parseInt)` daje `[1, NaN, NaN]` jer `map` šalje i indeks kao drugi argument, a `parseInt` ga tumači kao radix. Reši sa `.map(Number)` ili `.map(s => parseInt(s, 10))`.
+## Sparse arrays i async
+Callbacks se ne pozivaju za prazna mesta u sparse arrayevima. `forEach` ne čeka `async` callbacke (vidi lekciju o async/await).
 @points
-`forEach(fn)` :: Poziva funkciju za svaki element radi nuspojava. Vraća `undefined`, nema `break`.
+`forEach(fn)` :: Poziva funkciju za svaki element radi side effects. Vraća `undefined`, nema `break`.
 `map(fn)` :: Vraća novi niz iste dužine sa transformisanim elementima.
 `filter(fn)` :: Vraća novi niz samo sa elementima za koje funkcija vrati truthy.
 Callback potpis :: `(element, indeks, niz)`. Najčešće ti treba samo prvi argument.
 Lančanje :: `niz.filter(...).map(...)` čita se kao rečenica.
 @pitfalls
 - `["1","2","3"].map(parseInt)` daje `[1, NaN, NaN]`, jer `map` šalje i indeks kao drugi argument (osnovu).
-- `map` bez korišćenja rezultata je zloupotreba. Za nuspojave koristi `forEach` ili `for...of`.
+- `map` bez korišćenja rezultata je zloupotreba. Za side effects koristi `forEach` ili `for...of`.
 @code
 const cene = [100, 250, 40, 999];
 
@@ -1964,18 +2313,32 @@ A: Novi niz
 A*: `undefined`
 A: Originalni niz
 A: Broj elemenata
-W: `forEach` služi za nuspojave i ne može da se lančava. Za transformaciju koristi `map`.
+W: `forEach` služi za side effects i ne može da se lančava. Za transformaciju koristi `map`.
 @quiz
 Q: Kada koristiš `map`, a kada `forEach`?
 A: Svejedno je
-A*: `map` kad ti treba novi niz od rezultata, `forEach` kad samo izvršavaš nuspojavu (ispis, DOM)
+A*: `map` kad ti treba novi niz od rezultata, `forEach` kad samo izvršavaš side effect (ispis, DOM)
 A: `forEach` je brži, pa uvek `forEach`
 A: `map` samo za brojeve
 W: `map` bez korišćenja rezultata je zloupotreba, a `forEach` ne vraća ništa korisno.
 
-=== finders | 7 | find, findIndex, some i every
+=== finders | 7 | find, findIndex, some & every
 @intro
 Kad ti ne treba cela transformacija, već jedan element ili odgovor da/ne, ove metode staju čim znaju ishod.
+@how
+## Koja metoda za koje pitanje
+- "Daj mi prvi koji ispunjava uslov": `find` (element ili `undefined`).
+- "Gde je on?": `findIndex` (indeks ili `-1`). `findLast` i `findLastIndex` traže od kraja.
+- "Ima li bar jedan?": `some` (boolean).
+- "Da li svi ispunjavaju?": `every` (boolean).
+## Rano prekidanje
+Sve četiri staju čim znaju odgovor: `some` na prvom `true`, `every` na prvom `false`. Zato su efikasnije od `filter(...).length`.
+## Prazan array
+`[].some(...)` je `false` (nema nijednog elementa), a `[].every(...)` je `true` (nema nijednog koji krši uslov). To je tzv. vacuous truth.
+## Reference
+`find` vraća referencu na pravi element u arrayu, ne kopiju. Izmena rezultata menja i original.
+## Provera rezultata
+Pre pristupa property-jima proveri da li je rezultat `undefined`: `users.find(...)?.name`.
 @points
 `find(fn)` :: Prvi element koji zadovoljava uslov, ili `undefined`.
 `findIndex(fn)` :: Indeks tog elementa, ili `-1`. Postoje i `findLast` i `findLastIndex`.
@@ -2035,17 +2398,34 @@ A: `null`
 A: `-1`
 A*: `undefined`
 A: Prazan niz
-W: `find` vraća `undefined`, a `findIndex` vraća `-1`. Zato proveri rezultat pre pristupa svojstvima.
+W: `find` vraća `undefined`, a `findIndex` vraća `-1`. Zato proveri rezultat pre pristupa property-jima.
 
-=== reduce | 7 | reduce i reduceRight
+=== reduce | 7 | reduce & reduceRight
 @intro
 `reduce` svodi niz na jednu vrednost: broj, objekat, drugi niz ili čak funkciju. Najmoćnija i najčešće pogrešno korišćena metoda.
+@how
+## Ideja
+`reduce` prolazi kroz array i "uvlači" elemente u jednu vrednost (accumulator). Callback `(acc, element, index, array)` mora da vrati novi accumulator, koji postaje `acc` u sledećem koraku.
+```
+[1, 2, 3].reduce((acc, n) => acc + n, 0)
+// korak 1: acc=0, n=1 → 1
+// korak 2: acc=1, n=2 → 3
+// korak 3: acc=3, n=3 → 6
+```
+## Početna vrednost
+Uvek je navedi. Bez nje prvi element postaje `acc`, a prazan array baca `TypeError`. Početna vrednost takođe određuje tip rezultata: `0` za zbir, `{}` za objekat, `[]` za array, `new Map()` za Map.
+## Uobičajeni obrasci
+Zbir i maksimum, brojanje pojavljivanja, grupisanje po ključu, pretvaranje arraya u objekat po id-u, spajanje arrayeva i pipeline funkcija.
+## Česte greške
+Zaboravljen `return` (accumulator postaje `undefined`) i pravljenje novog objekta u svakom koraku (`{ ...acc, ... }`), što raste kvadratno sa brojem elemenata. Kad je mutacija lokalnog accumulatora u redu, `acc[k] = v; return acc` je brži.
+## Kada ne koristiti reduce
+Ako je `reduce` teško pročitati, `for...of` sa lokalnom promenljivom je potpuno prihvatljiva i često jasnija alternativa.
 @points
 Potpis :: `niz.reduce((acc, element, indeks, niz) => novi_acc, početnaVrednost)`.
 Akumulator :: Šta god vratiš iz callback-a postaje `acc` u sledećem koraku. Zaboravljen `return` daje `undefined`.
 Početna vrednost :: Uvek je prosledi. Bez nje prvi element postaje `acc`, a prazan niz baca `TypeError`.
 Tipični slučajevi :: Zbir, maksimum, brojanje, grupisanje, niz u objekat, spajanje nizova, pipeline funkcija.
-`reduceRight` :: Isto, ali kreće od kraja. Korisno za kompoziciju funkcija.
+`reduceRight` :: Isto, ali kreće od kraja. Korisno za function composition.
 @pitfalls
 - Spread u akumulatoru (`{ ...acc, [k]: v }`) kopira ceo objekat u svakom koraku: kvadratna složenost za velike nizove.
 - Ako je `reduce` nečitljiv, običan `for...of` je potpuno prihvatljiva zamena.
@@ -2100,7 +2480,7 @@ console.log(obradi("  zdravo "));
 @code reduceRight
 console.log(["a", "b", "c"].reduceRight((acc, s) => acc + s, ""));   // "cba"
 
-// kompozicija: funkcije se primenjuju zdesna nalevo
+// composition: funkcije se primenjuju zdesna nalevo
 const kompozicija = (...fns) => x => fns.reduceRight((v, f) => f(v), x);
 const dodaj1 = x => x + 1;
 const puta2 = x => x * 2;
@@ -2142,11 +2522,22 @@ A*: `undefined`
 A: `NaN`
 W: Bez `return` callback vraća `undefined`, pa akumulator u sledećem koraku postaje `undefined`. Rezultat poslednjeg poziva je `undefined`.
 
-=== sort | 7 | sort i reverse
+=== sort | 7 | sort & reverse
 @intro
-`sort` podrazumevano poredi elemente kao stringove i menja originalni niz. Za brojeve i objekte uvek pišeš komparator.
+`sort` po defaultu poredi elemente kao stringove i menja originalni niz. Za brojeve i objekte uvek pišeš komparator.
+@how
+## Default sort je tekstualan
+`sort()` bez komparatora pretvara elemente u stringove i poredi ih po kodovima znakova. Zato `[10, 9, 1].sort()` daje `[1, 10, 9]`.
+## Komparator
+Funkcija `(a, b) => broj`. Negativan rezultat znači da `a` ide ispred `b`, pozitivan da `b` ide ispred `a`, a nula da ostaje isto. Za brojeve: `a - b` (rastuće), `b - a` (opadajuće). Mora da vrati broj, ne boolean.
+## Sortiranje objekata
+`items.sort((a, b) => a.cena - b.cena)`. Za tekst `a.ime.localeCompare(b.ime, "sr")` poštuje jezik. Za više kriterijuma: `a.x - b.x || a.ime.localeCompare(b.ime)`.
+## Mutacija
+`sort` i `reverse` menjaju original i vraćaju istu referencu. Za kopiju koristi `[...arr].sort(...)` ili `arr.toSorted(...)` i `arr.toReversed()`.
+## Stabilnost
+Savremeni engine-i garantuju stable sort: elementi sa jednakim ključem zadržavaju međusobni redosled, pa možeš da sortiraš u više prolaza.
 @points
-Podrazumevano ponašanje :: Elementi se pretvaraju u stringove i porede leksikografski: `[10, 9, 1].sort()` daje `[1, 10, 9]`.
+Default ponašanje :: Elementi se pretvaraju u stringove i porede leksikografski: `[10, 9, 1].sort()` daje `[1, 10, 9]`.
 Komparator :: `(a, b) => a - b` rastuće, `(a, b) => b - a` opadajuće. Negativan rezultat znači da `a` ide pre `b`.
 Stringovi :: `a.localeCompare(b)` pravilno radi sa slovima poput č, ć, š, ž.
 Po više polja :: `(a, b) => a.x - b.x || a.ime.localeCompare(b.ime)`.
@@ -2212,19 +2603,33 @@ A*: `reci.sort((a, b) => a.localeCompare(b, "sr"))`
 A: `reci.reverse()`
 W: Podrazumevani `sort` poredi kodove znakova, pa slova sa kvačicama završe na kraju. `localeCompare` poštuje jezik.
 
-=== mapset | 7 | Map i Set
+=== mapset | 7 | Map & Set
 @intro
 `Map` i `Set` su ugrađene kolekcije za slučajeve kad običan objekat ili niz nisu pravi izbor.
+@how
+## Set
+`Set` čuva jedinstvene vrednosti u redosledu umetanja. Poređenje koristi SameValueZero (kao `===`, ali je `NaN` jednak sebi). `has` radi u konstantnom vremenu, pa je za veliki broj provera mnogo brži od `array.includes`.
+## Map
+`Map` čuva parove ključ-vrednost sa ključevima *bilo kog tipa* i pamti redosled. Ima `size`, `set` (može da se lanči), `get`, `has`, `delete` i iterira se sa `for...of`.
+## Map ili običan objekat
+- Objekat: ključevi su stringovi ili symbols, ima i inherited property-je (`toString`), nema `size`, serijalizuje se u JSON. Dobar za fiksnu strukturu zapisa.
+- Map: ključevi bilo čega, bez inherited ključeva, ima `size`, bolji za česta dodavanja i brisanja. Ne serijalizuje se direktno.
+## Referentni ključevi
+Objekti kao ključevi se porede po referenci: `map.get({id: 1})` ne nalazi ključ koji je postavljen drugim literalom `{id: 1}`. Sačuvaj referencu u promenljivoj.
+## Konverzije
+`new Set(array)`, `[...set]`, `new Map(Object.entries(obj))`, `Object.fromEntries(map)`, `[...map]`.
+## WeakMap i WeakSet
+Drže slabe reference na objekte, pa ih garbage collector može obrisati. Retko ti trebaju (npr. metapodaci o DOM elementima).
 @points
 `Set` :: Skup jedinstvenih vrednosti: `add`, `has`, `delete`, `size`. `has` je brz čak i za veliki broj elemenata, za razliku od `niz.includes`.
-Operacije nad skupovima :: Unija, presek i razlika se pišu sa spread-om i `filter`. Noviji pregledači imaju i `a.union(b)`, `a.intersection(b)`, `a.difference(b)`.
+Operacije nad skupovima :: Unija, presek i razlika se pišu sa spread-om i `filter`. Noviji browseri imaju i `a.union(b)`, `a.intersection(b)`, `a.difference(b)`.
 `Map` :: Parovi ključ-vrednost sa ključevima bilo kog tipa (i objekti), čuva redosled umetanja: `set`, `get`, `has`, `delete`, `size`.
 `Map` naspram objekta :: `Map` za dinamičke ključeve, česta dodavanja i brisanja i ključeve koji nisu stringovi. Običan objekat za fiksnu strukturu i JSON.
 Iteracija :: `for (const [k, v] of map)`, `map.keys()`, `map.values()`, `map.entries()`, `forEach`.
 Konverzije :: `new Map(Object.entries(obj))`, `Object.fromEntries(map)`, `[...map]`.
 `WeakMap` i `WeakSet` :: Ne sprečavaju brisanje ključeva iz memorije. Za metapodatke vezane za objekte. Retko ti trebaju.
 @pitfalls
-- `map["kljuc"] = v` ne ulazi u kolekciju, samo pravi svojstvo objekta. Koristi `set()` i `get()`.
+- `map["kljuc"] = v` ne ulazi u kolekciju, samo pravi property objekta. Koristi `set()` i `get()`.
 - Objekti se porede po referenci: `{ id: 1 }` kao ključ ne pogađa drugi `{ id: 1 }`.
 - `Map` i `Set` se ne serijalizuju u JSON direktno. Pretvori ih u niz ili objekat.
 @code
@@ -2301,15 +2706,30 @@ A: Serijalizuje se direktno u JSON
 A: Ključevi su uvek stringovi
 W: Za fiksnu strukturu i JSON običan objekat je i dalje bolji izbor.
 
-=== arraypatterns | 7 | Praktični obrasci sa nizovima
+=== arraypatterns | 7 | Practical array patterns
 @intro
 Nekoliko operacija koje ćeš stalno pisati: uklanjanje duplikata, grupisanje, spljoštavanje, pravljenje nizova i deljenje na delove.
+@how
+## Zašto ovi obrasci
+Iste operacije pišeš stalno. Ovo je skup koji vredi znati napamet.
+## Uklanjanje duplikata
+Za primitives: `[...new Set(arr)]`. Za objekte po ključu: napravi `Map` po ključu i uzmi `values()`.
+## Grupisanje
+`Object.groupBy(arr, fn)` (noviji browseri) ili ručno `reduce` sa `(acc[k] ??= []).push(item)`. Rezultat je objekat ključ → array.
+## flat i flatMap
+`flat(n)` spljošti n nivoa (`Infinity` do kraja). `flatMap(fn)` je `map` pa `flat(1)`: dobar je kad jedan element daje nula, jedan ili više rezultata, ili za izvlačenje ugnežđenih lista (`orders.flatMap(o => o.items)`).
+## Array.from
+Pravi array iz iterable-a (`Array.from("abc")`, `Array.from(set)`) ili iz array-like objekta (NodeList). Drugi argument je map funkcija, pa `Array.from({ length: 5 }, (_, i) => i)` pravi range. Zašto ne `new Array(5).fill(...)`: `fill([])` deli istu referencu na svim mestima.
+## Chunk, zip, range
+Nisu ugrađeni, ali se pišu u 1-2 reda sa `Array.from`, `slice` i `map`.
+## Verzije koje ne mutiraju
+`with(i, v)`, `toSpliced`, `toSorted` i `toReversed` vraćaju novi array. Dostupni su u modernim browserima. Za starije koristi spread i `slice`.
 @points
 Duplikati :: `[...new Set(niz)]` za primitive. Za objekte po ključu koristi `Map`.
-Grupisanje :: `Object.groupBy(niz, fn)` (noviji pregledači) ili `reduce`.
-`flat(dubina)` :: Spljoštava ugnežđene nizove, `flat(Infinity)` do kraja.
+Grupisanje :: `Object.groupBy(niz, fn)` (noviji browseri) ili `reduce`.
+`flat(dubina)` :: Spljoštava nested nizove, `flat(Infinity)` do kraja.
 `flatMap(fn)` :: `map` pa `flat(1)`. Korisno kad svaki element daje 0, 1 ili više rezultata.
-`Array.from` :: Pravi niz iz iterabilnog ili objekta sa `length`: `Array.from({ length: 5 }, (_, i) => i)`, `Array.from("abc")`, `Array.from(nodeList)`.
+`Array.from` :: Pravi niz iz iterable-a ili objekta sa `length`: `Array.from({ length: 5 }, (_, i) => i)`, `Array.from("abc")`, `Array.from(nodeList)`.
 `fill` :: `new Array(3).fill(0)`. Pazi: `fill([])` stavlja isti niz na sva mesta.
 Chunk, zip, range :: Nema ih ugrađenih, pišu se u par linija sa `map` i `slice`.
 `with`, `toSpliced` :: Verzije koje ne mutiraju (uz `toSorted` i `toReversed`).
@@ -2394,14 +2814,29 @@ A*: `Array.from({ length: 5 }, (_, i) => i + 1)`
 A: `[1..5]`
 W: `Array.from` prima objekat sa `length` i funkciju koja pravi svaki element. `Array(5)` daje prazan niz bez elemenata.
 
-=== objects | 8 | Objekti i optional chaining
+=== objects | 8 | Objects & Optional Chaining
 @intro
 Objekat je skup parova ključ-vrednost. Većina podataka u JavaScript aplikacijama (JSON, odgovori API-ja, stanje) je upravo to.
+@how
+## Šta je object
+Kolekcija property-ja: parova ključ → vrednost. Ključevi su stringovi (ili symbols), a brojevi se pretvaraju u stringove. Vrednost može biti bilo šta, uključujući funkcije (metode).
+## Pristup
+`obj.ime` za poznat ključ, `obj["ime"]` ili `obj[promenljiva]` za dinamičke ključeve i ključeve sa razmakom. Nepostojeći ključ daje `undefined` (bez greške), ali čitanje property-ja od `undefined` baca `TypeError`.
+## Literal shorthand
+`{ ime }` je shorthand za `{ ime: ime }`. `{ [k]: v }` je computed key. `{ f() {} }` je shorthand za metodu.
+## Ključevi, vrednosti, parovi
+`Object.keys(o)`, `Object.values(o)` i `Object.entries(o)` vraćaju array. `Object.fromEntries(parovi)` pravi objekat nazad, što omogućava "map" nad objektom: `Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v * 2]))`.
+## Provera ključa
+`"k" in o` gleda i inherited ključeve, a `Object.hasOwn(o, "k")` samo sopstvene. Vrednost `undefined` nije isto što i odsustvo ključa.
+## Optional chaining
+`a?.b?.c` prekida lanac i vraća `undefined` čim naiđe na `null` ili `undefined`. Postoje i `a?.[i]` i `a?.()`. Kombinuj sa `??` za default: `user?.adresa?.grad ?? "nepoznat"`.
+## Redosled ključeva
+Celobrojni ključevi idu prvi, rastuće, a ostali po redosledu dodavanja.
 @points
-Literal :: `{ ime: "Ana", godine: 28 }`. Skraćeno `{ ime }`, izračunati ključ `{ [k]: v }`, metode `{ f() {} }`.
+Literal :: `{ ime: "Ana", godine: 28 }`. Shorthand `{ ime }`, computed key `{ [k]: v }`, metode `{ f() {} }`.
 Tačka i uglaste zagrade :: `obj.ime` za poznate ključeve, `obj["puno ime"]` ili `obj[promenljiva]` za dinamičke ili neispravne identifikatore.
 `Object.keys / values / entries` :: Nizovi ključeva, vrednosti i parova `[ključ, vrednost]`. `Object.fromEntries` radi obrnuto.
-`in` i `Object.hasOwn` :: Provera ključa, `hasOwn` ne gleda nasleđena svojstva.
+`in` i `Object.hasOwn` :: Provera ključa, `hasOwn` ne gleda inherited properties.
 Optional chaining `?.` :: Zaustavlja lanac i vraća `undefined` ako je levo `null`/`undefined`. Radi i kao `?.[i]` i `?.()`.
 Dodavanje i brisanje :: `obj.novo = 1`, `delete obj.novo`.
 @pitfalls
@@ -2411,9 +2846,9 @@ Dodavanje i brisanje :: `obj.novo = 1`, `delete obj.novo`.
 const ime = "Ana", godine = 28;
 const kljuc = "grad";
 const osoba = {
-  ime,                        // skraćeno za ime: ime
+  ime,                        // shorthand za ime: ime
   godine,
-  [kljuc]: "Beograd",         // izračunati ključ
+  [kljuc]: "Beograd",         // computed key
   "puno ime": "Ana Anić",     // ključ sa razmakom
   pozdrav() { return `Zdravo, ja sam ${this.ime}`; },
 };
@@ -2463,7 +2898,7 @@ A: Nikad, tačka uvek radi
 A*: Kad je ključ u promenljivoj ili ima razmak/specijalne znakove
 A: Samo za nizove
 A: Kad je vrednost broj
-W: `obj.kljuc` traži bukvalno svojstvo "kljuc". `obj[kljuc]` koristi vrednost promenljive.
+W: `obj.kljuc` traži bukvalno property "kljuc". `obj[kljuc]` koristi vrednost promenljive.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: const k = "x";
@@ -2473,7 +2908,7 @@ A: `{ k: 1, y: 2 }`
 A*: `{ x: 1, y: 2 }`
 A: `{ '[k]': 1, y: 2 }`
 A: Baca grešku
-W: Uglaste zagrade u literalu računaju izraz i koriste rezultat kao ime ključa (izračunati ključ).
+W: Uglaste zagrade u literalu računaju expression i koriste rezultat kao ime ključa (computed key).
 @quiz
 Q: Šta vraća `Object.entries({ a: 1 })`?
 A: `["a", 1]`
@@ -2482,18 +2917,33 @@ A*: `[["a", 1]]`
 A: `[1]`
 W: Niz parova `[ključ, vrednost]`, pogodan za `for...of` i `map`.
 
-=== destructuring | 8 | Destrukturiranje, spread i rest
+=== destructuring | 8 | Destructuring, Spread & Rest
 @intro
 Destrukturiranje izvlači vrednosti iz objekata i nizova u promenljive. Spread (`...`) širi elemente, a rest (`...`) ih skuplja. Isti znak, suprotne uloge.
+@how
+## Ideja
+Destructuring izvlači vrednosti iz arrayeva i objekata u promenljive jednom linijom, koristeći sintaksu koja liči na literal.
+## Object destructuring
+Poklapanje je po imenu ključa: `const { ime, godine } = osoba`. Preimenovanje: `{ ime: korisnik }`. Default: `{ uloga = "gost" }`. Nested: `{ adresa: { grad } }`. Rest: `{ a, ...ostalo }` skuplja ostale ključeve u nov objekat.
+## Array destructuring
+Poklapanje je po poziciji: `const [prvi, drugi] = arr`. Preskakanje: `[a, , c]`. Zamena bez pomoćne promenljive: `[a, b] = [b, a]`. Radi sa svakim iterable-om (string, Set, Map).
+## Parametri funkcije
+`function f({ ime, godine = 18 } = {}) {}` daje imenovane argumente. Deo `= {}` sprečava grešku kad se funkcija pozove bez argumenta.
+## Spread i rest
+Isti simbol `...`, suprotne uloge. **Spread** širi elemente tamo gde se očekuje lista: `[...a, ...b]`, `{ ...o, x: 1 }`, `f(...args)`. **Rest** skuplja preostale u jedan array ili objekat: `function f(...args)`, `const [h, ...t] = arr`.
+## Shallow copy
+Spread i `Object.assign` kopiraju samo prvi nivo. Nested objekti ostaju deljeni. Za deep copy koristi `structuredClone`.
+## Redosled u spread-u
+Kasniji ključevi pregaze ranije: `{ ...defaults, ...opcije }` daje opcijama prednost.
 @points
-Objekti :: `const { ime, godine: god, uloga = "gost" } = obj`. Preimenovanje sa `:`, podrazumevana vrednost sa `=`.
+Objekti :: `const { ime, godine: god, uloga = "gost" } = obj`. Preimenovanje sa `:`, default value sa `=`.
 Nizovi :: `const [a, , c] = niz`. Pozicija je bitna, praznine preskaču. Zamena: `[x, y] = [y, x]`.
 Ugnežđeno :: `const { adresa: { grad } } = obj`.
 Rest :: `const [prvi, ...ostali] = niz`, `{ a, ...ostalo }`, `function f(...args)`. Mora biti poslednji.
 Spread :: `[...a, ...b]`, `{ ...a, ...b }`, `f(...args)`. Kasniji ključevi pregaziti ranije.
 Parametri funkcije :: `function f({ ime, godine = 18 } = {})` daje imenovane argumente.
 @pitfalls
-- Spread pravi plitku kopiju. Ugnežđeni objekti ostaju deljeni. Za duboku kopiju koristi `structuredClone()`.
+- Spread pravi shallow copy. Ugnežđeni objekti ostaju deljeni. Za deep copy koristi `structuredClone()`.
 - Destrukturiranje `null` ili `undefined` baca `TypeError`.
 @code
 const korisnik = { id: 7, ime: "Ana", adresa: { grad: "Niš", ptt: 18000 }, tagovi: ["a", "b"] };
@@ -2541,11 +2991,11 @@ duboka.adresa.grad = "Kragujevac";
 console.log(original.adresa.grad, duboka.adresa.grad);
 @quiz
 Q: Posle `const kopija = { ...original }; kopija.adresa.grad = "X";`, da li se menja `original.adresa.grad`?
-A*: Da, jer je ugnežđeni objekat deljen
-A: Ne, spread pravi duboku kopiju
+A*: Da, jer je nested objekat deljen
+A: Ne, spread pravi deep copy
 A: Baca grešku
 A: Samo ako je `original` deklarisan sa `let`
-W: Spread kopira samo prvi nivo. Svojstvo `adresa` u obe kopije pokazuje na isti objekat. Duboku kopiju daje `structuredClone()`.
+W: Spread kopira samo prvi nivo. Property `adresa` u obe kopije pokazuje na isti objekat. Deep copy daje `structuredClone()`.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: const { a, b = 5, ...rest } = { a: 1, c: 3, d: 4 };
@@ -2554,7 +3004,7 @@ A: `1 undefined { c: 3, d: 4 }`
 A*: `1 5 { c: 3, d: 4 }`
 A: `1 5 [ 3, 4 ]`
 A: `1 5 {}`
-W: `b` ne postoji u objektu, pa dobija default. `rest` skuplja ostala svojstva u novi objekat.
+W: `b` ne postoji u objektu, pa dobija default. `rest` skuplja ostala properties u novi objekat.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: const [x, , y = 9, ...z] = [1, 2, undefined, 4, 5];
@@ -2582,9 +3032,30 @@ A: Poredi `ime` i `korisnik`
 A: Baca grešku
 W: Sintaksa `{ kljuc: novoIme }` preimenuje pri destrukturiranju.
 
-=== immutable | 8 | Nepromenljivo ažuriranje podataka
+=== immutable | 8 | Immutable updates
 @intro
 U savremenom JavaScript-u (React, Redux, Vue, upravljanje stanjem) podaci se ne menjaju direktno, već se pravi nova kopija sa izmenom. Rezultat je predvidljiv kod i jednostavno otkrivanje promena.
+@how
+## Šta znači immutable update
+Umesto da menjaš postojeći objekat (`state.x = 1`), praviš novi sa promenom, a stari ostaje netaknut. Neizmenjeni delovi se dele (ista referenca), što je jeftino.
+## Zašto
+- Predvidljivost: niko drugi ne vidi iznenadnu promenu podatka koji drži.
+- Detekcija promena: `prev !== next` odmah kaže da li se nešto promenilo (React, Redux i slični to koriste).
+- Lakše debagovanje i undo/redo.
+## Obrasci
+```
+{ ...obj, polje: nova }                          // izmena
+[...arr, x]                                      // dodavanje
+arr.filter(x => x.id !== id)                     // uklanjanje
+arr.map(x => x.id === id ? { ...x, p: v } : x)   // izmena elementa
+const { p, ...ostalo } = obj                     // uklanjanje ključa
+```
+## Nested podaci
+Moraš da raširiš svaki nivo na putu do promene. Za duboke strukture to postaje glomazno, pa se koristi biblioteka (npr. Immer).
+## Object.freeze
+Sprečava izmene prvog nivoa (u strict mode-u baca grešku). Shallow je: nested objekti ostaju promenljivi.
+## Cena
+Nove kopije koštaju memoriju i vreme kod veoma velikih struktura. Za većinu aplikacija to nije problem.
 @points
 Zašto :: Mutacija deljenog objekta menja ga svuda gde postoji referenca. Nova kopija ostavlja stari podatak netaknut, a `===` odmah kaže da li se nešto promenilo.
 Objekat :: `{ ...o, polje: novo }`. Ugnežđeno: raširi svaki nivo na putu do izmene.
@@ -2592,10 +3063,10 @@ Niz: dodaj :: `[...niz, x]` ili `[x, ...niz]`.
 Niz: ukloni :: `niz.filter(x => x.id !== id)`.
 Niz: izmeni element :: `niz.map(x => x.id === id ? { ...x, polje: v } : x)`.
 Ukloni ključ :: `const { polje, ...ostalo } = obj`.
-`Object.freeze` :: Sprečava izmene na prvom nivou. U strict režimu izmena baca grešku. Dobro za konstante i hvatanje slučajnih mutacija.
-`structuredClone` :: Prava duboka kopija kad stvarno treba.
+`Object.freeze` :: Sprečava izmene na prvom nivou. U strict mode-u izmena baca grešku. Dobro za konstante i hvatanje slučajnih mutacija.
+`structuredClone` :: Deep copy kad stvarno treba.
 @pitfalls
-- Spread je plitka kopija: izmena ugnežđenog objekta menja i original.
+- Spread je shallow copy: izmena nested objekta menja i original.
 - `Object.freeze` je plitak. Ugnežđeni objekti ostaju promenljivi.
 @code
 "use strict";
@@ -2612,7 +3083,7 @@ const s1 = { ...stanje, korisnik: { ...stanje.korisnik, ime: "Marko" } };
 console.log(s1.korisnik.ime, stanje.korisnik.ime);
 console.log(s1.zadaci === stanje.zadaci);   // true: neizmenjeni delovi se dele
 
-// ugnežđeno
+// nested
 const s2 = {
   ...stanje,
   korisnik: { ...stanje.korisnik, adresa: { ...stanje.korisnik.adresa, grad: "Novi Sad" } },
@@ -2664,29 +3135,44 @@ W: `map` vraća novi niz u kome je izmenjen samo traženi zadatak (novi objekat)
 @quiz
 Q: Koliko duboko deluje `Object.freeze`?
 A: Zamrzava ceo objekat do najdubljeg nivoa
-A*: Samo prvi nivo, ugnežđeni objekti ostaju promenljivi
+A*: Samo prvi nivo, nested objekti ostaju promenljivi
 A: Samo nizove
 A: Ne radi sa objektima
-W: Za dubinsku nepromenljivost treba rekurzivno zamrznuti ili koristiti bibliotekom podržane strukture.
+W: Za dubinsku immutability treba rekurzivno zamrznuti ili koristiti bibliotekom podržane strukture.
 
-=== classes | 8 | Klase i nasleđivanje
+=== classes | 8 | Classes & Inheritance
 @intro
 `class` je čitljivija sintaksa za konstruktore i prototipe. Koristi se kad ti trebaju objekti sa zajedničkim ponašanjem i internim stanjem: modeli, servisi, custom greške.
+@how
+## Šta je class
+Sintaksa za pravljenje objekata sa zajedničkim ponašanjem. Ispod haube ostaje prototype-based inheritance: metode žive na `Klasa.prototype`, a svaka instanca ima vezu ka njemu.
+## Constructor i instance
+`new Klasa(args)` pravi prazan objekat, povezuje ga sa prototype-om, poziva `constructor` sa `this` na novom objektu i vraća ga. Poziv bez `new` baca `TypeError`.
+## Polja i metode
+Polja (`ime = "x"`) postaju property-ji instance. Metode su zajedničke za sve instance. Private fields (`#polje`) i private methods dostupni su samo unutar tela klase, a pristup spolja je SyntaxError.
+## Getters, setters i static
+`get x()` i `set x(v)` izgledaju kao property, a pozivaju funkciju (validacija, izračunata vrednost). `static` članovi pripadaju klasi, ne instancama.
+## Inheritance
+`class B extends A`. U konstruktoru `super(...)` mora da se pozove pre prve upotrebe `this`. `super.metoda()` poziva verziju iz roditelja. `instanceof` proverava ceo lanac.
+## Prototype chain
+Kad tražiš property, engine gleda objekat, pa njegov prototype, pa prototype tog prototype-a, sve do `null`. Tako instance "inherit-uju" metode.
+## Klase ili obični objekti
+Klase imaju smisla za entitete sa stanjem i ponašanjem (modeli, servisi, custom errors). Za jednostavne podatke i funkcije dovoljni su obični objekti i moduli. Preferiraj composition u odnosu na duboki inheritance.
 @points
 Sintaksa :: `class A { constructor(x) { this.x = x; } metoda() {} }`, a instanca se pravi sa `new A(1)`.
-Polja :: `ime = "..."` u telu klase. Privatna polja sa `#polje` nisu dostupna spolja (prava privatnost jezika).
-`get` i `set` :: Pristup kao svojstvu, a iza stoji funkcija (validacija, izračunata vrednost).
+Polja :: `ime = "..."` u telu klase. Private fields sa `#polje` nisu dostupni spolja (prava privatnost jezika).
+`get` i `set` :: Pristup kao property-ju, a iza stoji funkcija (validacija, izračunata vrednost).
 `static` :: Metode i polja na samoj klasi, ne na instancama: `Klasa.pomocna()`.
-`extends` i `super` :: Nasleđivanje. U konstruktoru izvedene klase `super(...)` mora pre `this`.
-Prototipi :: Ispod haube su metode na `Klasa.prototype`. Objekat traži svojstvo kroz lanac prototipa (prototype chain).
-Kompozicija :: Često je bolje sastaviti objekat od manjih delova nego graditi duboko nasleđivanje.
+`extends` i `super` :: Inheritance. U konstruktoru izvedene klase `super(...)` mora pre `this`.
+Prototipi :: Ispod haube su metode na `Klasa.prototype`. Objekat traži property kroz lanac prototipa (prototype chain).
+Kompozicija :: Često je bolje sastaviti objekat od manjih delova nego graditi duboku hijerarhiju.
 @pitfalls
 - Metoda izvučena iz instance gubi `this` (vidi lekciju o `this`).
-- Klase se ne podižu kao deklaracije funkcija: koristi ih tek posle definicije.
-- Duboka hijerarhija nasleđivanja se teško održava. Dva nivoa su obično dovoljna.
+- Klase nisu hoisted kao deklaracije funkcija: koristi ih tek posle definicije.
+- Duboka hijerarhija inheritance-a se teško održava. Dva nivoa su obično dovoljna.
 @code
 class Racun {
-  #stanje = 0;                     // privatno polje
+  #stanje = 0;                     // private field
   static brojRacuna = 0;
 
   constructor(vlasnik) {
@@ -2711,14 +3197,14 @@ class Racun {
 const r = new Racun("Ana");
 r.uplati(1000).isplati(250);
 console.log(r.stanje, String(r), Racun.brojRacuna);
-console.log(Object.keys(r));       // privatno polje se ne vidi
+console.log(Object.keys(r));       // private field se ne vidi
 r.stanje = 999;                    // nema setter-a: tiho se ignoriše
 console.log(r.stanje);
 
 try { r.isplati(5000); } catch (e) { console.log(e.name + ": " + e.message); }
 try { r.uplati(-5); } catch (e) { console.log(e.name + ": " + e.message); }
 
-// Nasleđivanje
+// Inheritance
 class StedniRacun extends Racun {
   constructor(vlasnik, kamata) {
     super(vlasnik);                // obavezno pre this
@@ -2740,10 +3226,10 @@ Q: Šta znači `#stanje` ispred imena polja u klasi?
 A: Polje je konstanta
 A*: Polje je privatno i dostupno samo unutar klase
 A: Polje je statičko
-A: Polje je nasleđeno
-W: Privatna polja (`#`) su deo jezika. Pristup spolja je sintaksna greška, a ne samo konvencija.
+A: Polje je inherited
+W: Private fields (`#`) su deo jezika. Pristup spolja je sintaksna greška, a ne samo konvencija.
 @quiz
-Q: Šta mora da se pozove pre korišćenja `this` u konstruktoru klase koja nasleđuje drugu?
+Q: Šta mora da se pozove pre korišćenja `this` u konstruktoru klase koja koristi `extends`?
 A: `new`
 A*: `super(...)`
 A: `bind`
@@ -2762,7 +3248,7 @@ A: `2 object`
 A*: `10 function`
 A: `10 class`
 A: `1 function`
-W: Getter se čita kao svojstvo i računa pri svakom pristupu. `class` je u suštini funkcija.
+W: Getter se čita kao property i računa pri svakom pristupu. `class` je u suštini funkcija.
 @quiz
 Q: Šta je `static` metoda?
 A: Metoda koja se ne može menjati
@@ -2778,9 +3264,22 @@ A*: Baca `TypeError`
 A: Pravi prazan objekat
 W: Konstruktori klasa moraju da se pozivaju sa `new`.
 
-=== json | 9 | JSON: stringify, parse i localStorage
+=== json | 9 | JSON: stringify, parse & localStorage
 @intro
 JSON je tekstualni format za razmenu podataka. Svaki odgovor API-ja i većina sačuvanih podataka je JSON. Razlikuj JSON (tekst) od JavaScript objekta (struktura u memoriji).
+@how
+## Šta je JSON
+Tekstualni format za razmenu podataka, nastao iz sintakse JavaScript objekata, ali strožiji: ključevi i stringovi u dvostrukim navodnicima, bez komentara, bez zaostalih zareza, bez `undefined` i funkcija. Dozvoljeni su object, array, string, number, boolean i `null`.
+## stringify i parse
+`JSON.stringify(v)` serijalizuje (serialization) vrednost u string, a `JSON.parse(s)` radi obrnuto. Ako je ulaz neispravan, `parse` baca `SyntaxError`, pa spoljašnje podatke uvek obavij u `try/catch`.
+## Šta se gubi
+`undefined`, funkcije i symbols se preskaču (u arrayu postaju `null`), `NaN` i `Infinity` postaju `null`, `Date` postaje ISO string (i ostaje string pri parse), a `Map` i `Set` postaju `{}`. Kružne reference bacaju grešku.
+## Kontrola serijalizacije
+`toJSON()` na objektu određuje šta se zapisuje. Drugi argument `stringify` (replacer) filtrira ili menja ključeve, a treći je indentacija za lep ispis. `parse` ima reviver koji menja vrednosti pri čitanju (npr. string u `Date`).
+## localStorage
+Key-value storage u browseru: samo stringovi, oko 5 MB po sajtu, sinhroni API, ostaje i nakon zatvaranja kartice. Zato objekti idu kroz JSON. `sessionStorage` ima isti API, ali traje do zatvaranja kartice. Svaki skript na stranici može da čita storage, pa ne čuvaj tokene i lozinke.
+## Deep copy
+`JSON.parse(JSON.stringify(x))` kopira samo čist JSON (gubi Date, undefined...). Bolje rešenje je `structuredClone(x)`.
 @points
 `JSON.stringify(v)` :: Vrednost u string. `JSON.stringify(v, null, 2)` daje lep ispis, a drugi argument može biti niz dozvoljenih ključeva ili funkcija za filtriranje.
 `JSON.parse(s)` :: String u vrednost. Baca `SyntaxError` za neispravan JSON, pa uvek u `try/catch` kad podaci dolaze spolja.
@@ -2788,7 +3287,7 @@ JSON je tekstualni format za razmenu podataka. Svaki odgovor API-ja i većina sa
 `toJSON()` :: Metoda koja određuje kako se objekat serijalizuje (`Date` je ima).
 `reviver` :: `JSON.parse(s, (k, v) => ...)` za vraćanje tipova, npr. datuma.
 Pravila JSON-a :: Ključevi i stringovi samo u dvostrukim navodnicima, bez komentara i bez zaostalog zareza.
-Duboka kopija :: `JSON.parse(JSON.stringify(x))` radi samo za čist JSON. Bolja opcija je `structuredClone`.
+Deep copy :: `JSON.parse(JSON.stringify(x))` radi samo za čist JSON. Bolja opcija je `structuredClone`.
 `localStorage` :: Čuva samo stringove, pa se objekti čuvaju kroz JSON. Oko 5 MB po sajtu, sinhroni API, dostupan svakom skriptu na stranici: ne čuvaj tokene i tajne.
 @pitfalls
 - Kružne reference bacaju `TypeError` pri `stringify`.
@@ -2829,7 +3328,7 @@ try { JSON.stringify(krug); } catch (e) { console.log(e.name); }
 const tacka = { x: 1, y: 2, toJSON() { return `(${this.x}, ${this.y})`; } };
 console.log(JSON.stringify({ tacka }));
 
-// duboka kopija
+// deep copy
 const original = { a: { b: 1 } };
 const kopija = JSON.parse(JSON.stringify(original));
 kopija.a.b = 2;
@@ -2908,9 +3407,24 @@ A: Proveriti dužinu stringa
 A: Prvo ga pretvoriti u broj
 W: Podaci iz `localStorage`, forme ili API-ja mogu biti oštećeni ili prazni.
 
-=== dates | 9 | Datum i vreme: Date i Intl
+=== dates | 9 | Date & Intl
 @intro
 `Date` je nezgodan, ali neizbežan. Dovoljno je da znaš nekoliko pravila i da formatiranje prepustiš `Intl`.
+@how
+## Date je trenutak
+`Date` interno čuva broj milisekundi od 1. 1. 1970. UTC. Vremenska zona se primenjuje tek pri čitanju komponenti (`getHours`) i ispisu. Isti `Date` daje različit sat u različitim zonama.
+## Pravljenje
+`new Date()` je sada, zatim `new Date(ms)`, `new Date("2024-03-15T10:30:00Z")` i `new Date(2024, 2, 15)` (komponente u lokalnoj zoni, **mesec od 0**). `Date.now()` daje ms. Pogrešan string daje Invalid Date (`getTime()` je `NaN`).
+## Parsiranje stringova
+ISO format je jedini pouzdan: `"2024-03-15"` (samo datum) se tumači kao UTC, a `"2024-03-15T10:00"` (bez Z) kao lokalno vreme. Ostali formati zavise od browsera.
+## Aritmetika
+Oduzimanje dva datuma daje ms. Dodavanje dana: kopiraj datum pa `setDate(getDate() + n)` (setteri mutiraju). Ne množi sa 86400000 za kalendarske dane, jer prelazak na letnje i zimsko vreme menja dužinu dana.
+## Formatiranje
+Za prikaz korisniku koristi `Intl.DateTimeFormat` ili `toLocaleDateString(locale, options)`, a za razmenu podataka `toISOString()`. Za srpski latinicom koristi `sr-Latn-RS` (`sr-RS` daje ćirilicu).
+## Intl
+`Intl.NumberFormat` formatira brojeve, valute (`currency: "RSD"`) i procente. `Intl.RelativeTimeFormat` pravi "pre 3 dana". `Intl.PluralRules` i `Intl.ListFormat` postoje za složenije slučajeve.
+## Kada biblioteka
+Za vremenske zone, trajanja i ponavljanja koristi date-fns, Luxon ili novi `Temporal` kad bude široko podržan.
 @points
 Pravljenje :: `new Date()` (sada), `new Date("2024-03-15T10:30:00Z")` (ISO string), `new Date(2024, 2, 15)` (komponente, **mesec počinje od 0**), `Date.now()` (milisekunde).
 Čitanje :: `getFullYear()`, `getMonth()` (0 do 11), `getDate()` (dan u mesecu), `getDay()` (dan u nedelji, 0 je nedelja), `getHours()`... Postoje i UTC verzije: `getUTCHours()`.
@@ -3003,23 +3517,47 @@ A*: Broj milisekundi od 1. januara 1970. UTC
 A: Trenutni sat
 W: Koristi se za merenje vremena i vremenske oznake. `new Date()` vraća objekat.
 
-=== errors | 10 | Greške: try/catch, throw i Error
+=== errors | 10 | Errors: try/catch, throw & Error
 @intro
 Greške su normalan deo programa. Cilj nije da ih nema, nego da se obrade na pravom mestu i da poruka jasno kaže šta je pošlo naopako.
+@how
+## Šta je greška u JavaScript-u
+Kad se desi greška (ili je ti baciš sa `throw`), normalan tok staje i engine traži najbliži `catch` kroz call stack. Ako ga nema, greška je uncaught i program (ili bar taj callback) staje.
+## try, catch, finally
+```
+try {
+  radi();            // ako ovde nešto baci grešku...
+} catch (e) {
+  obradi(e);         // ...izvršava se ovo
+} finally {
+  ocisti();          // izvršava se uvek
+}
+```
+`finally` se izvršava i kad `try` ili `catch` vrate vrednost sa `return`. Parametar `catch`-a može da se izostavi.
+## Error objekat
+Ima `name`, `message`, `stack` i opcioni `cause`. Uvek bacaj `Error` (ili podklasu), ne stringove, jer samo oni nose stack trace. Ugrađeni tipovi: `TypeError`, `ReferenceError`, `RangeError`, `SyntaxError`.
+## Custom errors
+`class ValidationError extends Error` sa dodatnim poljima omogućava `instanceof` i razlikovanje u `catch`. Postavi `this.name`. Pri umotavanju originalne greške koristi `new Error(poruka, { cause: original })`.
+## Rethrow
+Obradi samo greške koje znaš (`if (e instanceof X)`), a ostale baci dalje sa `throw e`. Prazan `catch` guta greške i pravi nevidljive bagove.
+## Sinhrono i asinhrono
+`try/catch` hvata samo greške koje se dese dok se `try` blok izvršava. Greška u kasnijem callbacku (`setTimeout`, event listener) ga zaobilazi. U `async` funkcijama `await` unutar `try` hvata rejected promise-e. Neuhvaćen rejected promise izaziva `unhandledrejection`.
+## Debagovanje
+`console.error`, `console.table`, `console.dir`, `console.time`. U DevTools-u koristi breakpoint ili `debugger;`. Stack trace čitaj odozgo: prva linija je mesto gde je greška nastala, a ostale pokazuju ko je pozvao.
 @points
 `try / catch / finally` :: Greška u `try` prelazi u `catch`, a `finally` se izvršava uvek (čišćenje, gašenje loadera). Parametar `catch` može da se izostavi: `catch { ... }`.
 `throw` :: Može da baci bilo šta, ali bacaj `Error` objekte: imaju `message`, `name` i `stack`.
-Ugrađeni tipovi :: `TypeError` (pogrešan tip, čitanje svojstva od `undefined`), `ReferenceError` (nepostojeća promenljiva), `RangeError` (vrednost van opsega), `SyntaxError` (npr. `JSON.parse`).
+Ugrađeni tipovi :: `TypeError` (pogrešan tip, čitanje property-ja od `undefined`), `ReferenceError` (nepostojeća promenljiva), `RangeError` (vrednost van opsega), `SyntaxError` (npr. `JSON.parse`).
 Custom greške :: `class ValidationError extends Error` sa dodatnim poljima i sopstvenim `name`.
 `cause` :: `new Error("poruka", { cause: original })` čuva izvornu grešku kad je umotavaš.
 Rethrow :: Obradi samo ono što znaš, ostalo baci dalje sa `throw e`.
-Async :: U `async` funkcijama `try/catch` hvata odbijene `await`-ove. Odbijen promise koji niko ne obradi daje `unhandledrejection`.
+Async :: U `async` funkcijama `try/catch` hvata rejected `await`-ove. Rejected promise koji niko ne obradi daje `unhandledrejection`.
 Globalno :: `window.addEventListener("error", ...)` i `"unhandledrejection"` služe za logovanje, ne za oporavak.
 Debagovanje :: `console.error`, `console.table`, `console.dir`, `console.time`. U DevTools-u breakpoint ili `debugger;`. Stack trace čitaj odozgo: prva linija je mesto gde je greška nastala.
 @pitfalls
 - Prazan `catch` guta grešku i bag postaje nevidljiv. Ili je obradi, ili je baci dalje.
 - `try/catch` hvata samo sinhrone greške unutar `try`. Greška u callback-u koji se izvršava kasnije (`setTimeout`) ga zaobilazi.
-- Ne koristi izuzetke za običan tok programa.
+- Ne koristi exceptions za običan tok programa.
 @code
 // try / catch / finally
 function podeli(a, b) {
@@ -3133,7 +3671,7 @@ A: Poređenjem `e === "ValidationError"`
 A*: `if (e instanceof ValidationError)`, a ostale greške baciš dalje sa `throw e`
 A: Preko `typeof e`
 A: Ne može da se razlikuje
-W: Custom klasa koja nasleđuje `Error` omogućava `instanceof`. Obradi samo ono što očekuješ.
+W: Custom klasa koja radi `extends Error` omogućava `instanceof`. Obradi samo ono što očekuješ.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: try {
@@ -3145,20 +3683,45 @@ A: `Error`
 A: `ReferenceError`
 A*: `TypeError`
 A: `RangeError`
-W: Čitanje svojstva od `null` ili `undefined` je `TypeError`.
+W: Čitanje property-ja od `null` ili `undefined` je `TypeError`.
 
-=== eventloop | 11 | Event loop, call stack i redovi zadataka
+=== eventloop | 11 | Event Loop, Call Stack & Queues
 @intro
-JavaScript izvršava kod u jednoj niti. Event loop omogućava da asinhrone operacije (tajmeri, mreža, događaji) ne blokiraju ostatak programa.
+JavaScript izvršava kod u jednom thread-u. Event loop omogućava da asinhrone operacije (timers, mreža, events) ne blokiraju ostatak programa.
+@how
+## Zašto event loop
+JavaScript izvršava kod u jednom thread-u (single-threaded). Da ne bi čekao mrežu ili timere, delegira ih okruženju (browser ili Node), a rezultate obrađuje preko event loop-a.
+## Delovi sistema
+- **Call stack**: stack trenutnih poziva funkcija. Izvršava se ono što je na vrhu.
+- **Web APIs / okruženje**: timers, `fetch` i DOM events rade van stack-a.
+- **Task queue (macrotasks)**: callbacks od `setTimeout`, `setInterval`, UI events, I/O.
+- **Microtask queue**: `Promise.then/catch/finally`, `queueMicrotask`, nastavak posle `await`.
+## Kako loop radi
+```
+1. Izvrši sav sinhroni kod dok se call stack ne isprazni.
+2. Izvrši SVE microtasks (i nove koje nastanu usput).
+3. (po potrebi: iscrtavanje stranice)
+4. Uzmi JEDAN macrotask i izvrši ga.
+5. Vrati se na korak 2.
+```
+Zato `Promise.then` uvek stigne pre `setTimeout(..., 0)`.
+## await
+`await` pauzira samo tu `async` funkciju, a ostatak programa nastavlja. Nastavak funkcije ide u microtask queue kad se promise resolve-uje.
+## setTimeout(fn, 0)
+Ne znači "odmah", nego "čim stack i microtasks budu prazni".
+## Blokiranje
+Dugačak sinhroni kod drži stack zauzet, pa timers, klikovi i iscrtavanje čekaju. Težak posao podeli na delove ili prebaci u Web Worker.
+## Starvation
+Microtask koji stalno zakazuje novi microtask sprečava prelazak na macrotask i zamrzava stranicu.
 @points
-Call stack :: Stek trenutnih poziva funkcija. Izvršava se jedna po jedna, dok se stek ne isprazni.
-Web API / okruženje :: Tajmeri, mreža i događaji rade van steka. Kad završe, njihov callback čeka u redu.
-Macrotask red :: `setTimeout`, `setInterval`, UI događaji, I/O. Event loop uzima jedan zadatak, izvrši ga, pa nastavlja.
-Microtask red :: `Promise.then/catch/finally`, `queueMicrotask`, nastavak posle `await`. Prazni se potpuno posle svakog zadatka, pre sledećeg macrotask-a.
+Call stack :: Stack trenutnih poziva funkcija. Izvršava se jedna po jedna, dok se stack ne isprazni.
+Web API / okruženje :: Timers, mreža i events rade van stack-a. Kad završe, njihov callback čeka u redu.
+Macrotask queue :: `setTimeout`, `setInterval`, UI events, I/O. Event loop uzima jedan task, izvrši ga, pa nastavlja.
+Microtask queue :: `Promise.then/catch/finally`, `queueMicrotask`, nastavak posle `await`. Prazni se potpuno posle svakog zadatka, pre sledećeg macrotask-a.
 Redosled :: Sinhroni kod, pa svi microtask-ovi, pa jedan macrotask, pa opet svi microtask-ovi.
-`setTimeout(fn, 0)` :: Ne znači "odmah", nego "čim stek i microtask-ovi budu prazni".
+`setTimeout(fn, 0)` :: Ne znači "odmah", nego "čim stack i microtask-ovi budu prazni".
 @pitfalls
-- Duga sinhrona petlja blokira sve: tajmere, događaje i iscrtavanje.
+- Duga sinhrona petlja blokira sve: timers, events i iscrtavanje.
 - Microtask koji stalno zakazuje novi microtask može da izgladni macrotask-ove i zamrzne stranicu.
 @code Redosled
 console.log("1: sinhrono, početak");
@@ -3222,14 +3785,42 @@ W: `f()` radi sinhrono do prvog `await` (ispiše 1), a nastavak (2) ide u microt
 @quiz
 Q: Šta dugačka sinhrona petlja radi sa stranicom?
 A: Ništa, izvršava se u pozadini
-A*: Blokira jedinu nit: tajmeri, klikovi i iscrtavanje čekaju da se završi
+A*: Blokira jedini thread: timers, klikovi i iscrtavanje čekaju da se završi
 A: Pravi novi thread
 A: Samo usporava mrežu
-W: JavaScript izvršava kod u jednoj niti. Težak posao deli na delove ili prebaci u Web Worker.
+W: JavaScript izvršava kod u jednom thread-u. Težak posao deli na delove ili prebaci u Web Worker.
 
-=== promises | 11 | Promise: then, catch, finally
+=== promises | 11 | Promises: then, catch, finally
 @intro
 Promise je objekat koji predstavlja vrednost koja će stići kasnije. Lanci `then` su osnova na kojoj stoji `async/await`.
+@how
+## Šta je Promise
+Objekat koji predstavlja rezultat operacije koji još ne postoji. Ima tri stanja: **pending** (čeka), **fulfilled** (uspeh, ima vrednost) i **rejected** (greška, ima razlog). Iz pending prelazi u fulfilled ili rejected tačno jednom i posle je immutable (settled).
+## Pravljenje
+```
+new Promise((resolve, reject) => {
+  // asinhroni posao
+  resolve(vrednost);     // ili reject(new Error("..."))
+});
+```
+Funkcija se izvršava odmah (sinhrono), a `resolve` i `reject` se zovu kad posao završi. Većinu promise-a ne praviš sam, nego ih vraćaju API-ji (npr. `fetch`).
+## then, catch, finally
+`then(onOk, onErr)` registruje callback i *vraća novi promise*. Vrednost koju callback vrati postaje rezultat tog novog promise-a, a ako vrati promise, čeka se. Greška (`throw`) u callbacku odbija novi promise. `catch(fn)` je isto što i `then(undefined, fn)`. `finally(fn)` se izvršava u oba slučaja i ne menja rezultat.
+## Chaining
+```
+fetch(url)
+  .then(r => r.json())     // vraća promise
+  .then(d => obradi(d))
+  .catch(e => prikazi(e))  // hvata grešku bilo gde iznad
+```
+Svaki `then` mora da vrati vrednost za sledeći korak. Zaboravljen `return` je čest bag.
+## Kombinatori
+- `Promise.all([...])`: čeka sve, rejected na prvu grešku.
+- `Promise.allSettled([...])`: čeka sve, nikad ne odbija, vraća statuse.
+- `Promise.race([...])`: prvi završen (uspeh ili greška).
+- `Promise.any([...])`: prvi uspešan (greška tek ako svi padnu).
+## Callbacks i promises
+Promises rešavaju "callback hell" i daju jedinstven način obrade grešaka. `async/await` je sintaksa preko njih.
 @points
 Stanja :: `pending` (čeka), `fulfilled` (uspeh sa vrednošću), `rejected` (greška sa razlogom). Kad se jednom razreši, više se ne menja.
 Pravljenje :: `new Promise((resolve, reject) => { ... })`.
@@ -3277,7 +3868,7 @@ wait(10, 1)
   .then(v => wait(10, v + 1))                // promise se vraća i čeka
   .then(v => console.log("sa return-om:", v));
 @quiz
-Q: Šta radi `Promise.all([a, b, c])` ako `b` bude odbijen?
+Q: Šta radi `Promise.all([a, b, c])` ako `b` bude rejected?
 A: Čeka sve, pa vrati niz ishoda
 A*: Odmah se odbija sa greškom iz `b`
 A: Ignoriše `b` i vraća ostale
@@ -3303,12 +3894,12 @@ A*: `Promise.allSettled`
 A: `Promise.any`
 W: `allSettled` nikad ne odbija i vraća niz objekata `{ status, value/reason }`.
 @quiz
-Q: Koji kombinator vraća rezultat PRVOG USPEŠNOG promise-a (ignoriše odbijene)?
+Q: Koji kombinator vraća rezultat PRVOG USPEŠNOG promise-a (ignoriše rejected)?
 A: `Promise.race`
 A*: `Promise.any`
 A: `Promise.all`
 A: `Promise.resolve`
-W: `race` uzima prvi završen (čak i ako je odbijen), a `any` prvi uspešan.
+W: `race` uzima prvi završen (čak i ako je rejected), a `any` prvi uspešan.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: Promise.reject(new Error("a"))
@@ -3318,13 +3909,36 @@ A: `a`
 A*: `f / a`
 A: `a / f`
 A: `f`
-W: `finally` se izvršava i kad je promise odbijen, a ne guta grešku, pa je `catch` posle toga hvata.
+W: `finally` se izvršava i kad je promise rejected, a ne guta grešku, pa je `catch` posle toga hvata.
 
 === asyncawait | 11 | async / await
 @intro
 `async/await` je sintaksa preko promise-a koja asinhroni kod čini sličnim običnom, sinhronom kodu, uključujući `try/catch`.
+@how
+## Šta radi async
+`async` ispred funkcije garantuje da ona uvek vraća Promise. `return 5` postaje promise resolve-ovan na `5`, a `throw` postaje rejected promise sa tom greškom.
+## Šta radi await
+`await expression` pauzira *samo tu funkciju* dok se promise ne resolve-uje, pa vraća vrednost (ili baca grešku ako je rejected). Ostatak programa i dalje radi, jer funkcija predaje kontrolu event loop-u. Dozvoljen je u `async` funkcijama i na vrhu ES modula.
+```
+async function ucitaj() {
+  const res = await fetch(url);      // pauza
+  const data = await res.json();     // pauza
+  return data;                       // promise resolve-ovan na data
+}
+```
+## Greške
+Rejected promise se u `await` pretvara u exception, pa se obrađuje klasičnim `try/catch/finally`. Bez `try/catch` greška odbija promise koji `async` funkcija vraća.
+## Sekvencijalno ili paralelno
+Uzastopni `await` čeka jedan za drugim, što je sporo ako su pozivi nezavisni. Pokreni ih zajedno pa čekaj zbirno:
+```
+const [a, b] = await Promise.all([ucitajA(), ucitajB()]);
+```
+## Petlje
+`for...of` sa `await` ide redom. `arr.forEach(async ...)` ne čeka ništa, jer `forEach` ignoriše vraćene promise-e. Za paralelno: `await Promise.all(arr.map(async x => ...))`.
+## Zamke
+Zaboravljen `await` daje promise umesto vrednosti (greška se vidi tek kasnije). `await` u petlji bez potrebe usporava. `return await` unutar `try` potreban je ako želiš da uhvatiš grešku u istom `catch`.
 @points
-`async` funkcija :: Uvek vraća Promise. `return 5` postaje `Promise` razrešen na `5`, a `throw` odbijen promise.
+`async` funkcija :: Uvek vraća Promise. `return 5` postaje `Promise` koji se resolve-uje na `5`, a `throw` daje rejected promise.
 `await` :: Pauzira samo tu funkciju (ne ceo program) dok se promise ne razreši, pa vrati vrednost ili baci grešku.
 Greške :: `try { await ... } catch (e) { ... } finally { ... }`.
 Sekvencijalno :: Uzastopni `await`-ovi se čekaju jedan za drugim.
@@ -3395,7 +4009,7 @@ A: `forEach` ne podržava funkcije
 A*: `forEach` ignoriše promise-e koje callback vraća
 A: `await` ne radi u callback-ovima
 A: Zato što je `forEach` asinhron
-W: `forEach` poziva callback i odbacuje povratnu vrednost. Za redno čekanje koristi `for...of`, a za paralelno `await Promise.all(arr.map(...))`.
+W: `forEach` poziva callback i odbacuje return value. Za redno čekanje koristi `for...of`, a za paralelno `await Promise.all(arr.map(...))`.
 @quiz
 Q: Šta ispisuje ovaj kod?
 C: const wait = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));
@@ -3420,7 +4034,7 @@ W: Uzastopni `await` čeka jedan za drugim, a `Promise.all` pokreće oba odmah i
 Q: Koji je problem u `const podaci = ucitajKorisnike(); console.log(podaci.length);` ako je `ucitajKorisnike` `async`?
 A: Nema problema
 A*: Zaboravljen je `await`: `podaci` je `Promise`, pa je `length` `undefined`
-A: `length` nije svojstvo
+A: `length` nije property
 A: `console.log` ne radi sa nizovima
 W: Bez `await` dobijaš sam promise. Greške zbog toga se često pojave tek kasnije.
 @quiz
@@ -3444,13 +4058,28 @@ A*: Unutar `async` funkcije (ili na vrhu ES modula)
 A: Samo u klasama
 W: U običnoj skripti `await` van `async` funkcije je sintaksna greška.
 
-=== timers | 11 | Tajmeri, debounce i throttle
+=== timers | 11 | Timers, debounce & throttle
 @intro
 `setTimeout` i `setInterval` zakazuju kod za kasnije, a debounce i throttle ograničavaju koliko često se funkcija izvršava. Neizbežni su kod pretrage dok korisnik kuca, skrolovanja i promene veličine prozora.
+@how
+## Kako rade timers
+`setTimeout(fn, ms)` kaže okruženju: "posle ms stavi fn u task queue". Callback se izvršava kad je ms prošlo *i* kad je call stack prazan, pa je ms minimum, ne garancija. Neaktivne kartice usporavaju timers.
+## setInterval
+Ponavlja callback na svakih ms. Ako callback traje duže od intervala, pozivi se nagomilavaju. Za polling, gde sledeći poziv sme da krene tek kad prethodni završi, koristi rekurzivni `setTimeout`. Interval uvek očisti sa `clearInterval` kad ti više ne treba.
+## Debounce
+Odlaže izvršavanje dok ne prođe pauza od poslednjeg poziva. Svaki novi poziv poništava prethodni timer. Idealno za pretragu dok korisnik kuca (pošalji zahtev tek kad prestane).
+## Throttle
+Propušta poziv najviše jednom u zadatom intervalu. Idealno za `scroll`, `resize` i `mousemove`, gde events ima stotine u sekundi.
+## Razlika
+Debounce: "reaguj kad se umiri". Throttle: "reaguj ne češće od X".
+## requestAnimationFrame
+Za animacije i iscrtavanje koristi `requestAnimationFrame(fn)`: poziva se pred sledeće iscrtavanje (oko 60 puta u sekundi) i pauzira se u neaktivnoj kartici.
+## Closure
+Oba obrasca koriste closure da pamte timer, odnosno vreme poslednjeg poziva.
 @points
 `setTimeout(fn, ms)` :: Izvršava jednom, ne ranije od `ms`. Vraća id za `clearTimeout(id)`.
 `setInterval(fn, ms)` :: Ponavlja na svakih `ms` dok se ne prekine sa `clearInterval(id)`. Ne zaboravi da ga očistiš.
-Nije precizno :: Tajmeri garantuju minimum, ne tačno vreme, jer čekaju event loop. Neaktivne kartice ih dodatno usporavaju.
+Nije precizno :: Timers garantuju minimum, ne tačno vreme, jer čekaju event loop. Neaktivne kartice ih dodatno usporavaju.
 Rekurzivni `setTimeout` :: Umesto `setInterval` kad sledeće izvršavanje mora da sačeka kraj prethodnog (npr. polling servera).
 Debounce :: Izvršava funkciju tek kad prođe pauza od poslednjeg poziva. Pretraga dok korisnik kuca.
 Throttle :: Izvršava funkciju najviše jednom u zadatom intervalu. Skrol, resize, kretanje miša.
@@ -3512,7 +4141,7 @@ W: Debounce poništava prethodni zakazani poziv pri svakom novom, pa se izvrši 
 @quiz
 Q: Šta radi `setTimeout(fn(), 1000)`?
 A: Pozove `fn` posle 1000 ms
-A*: Pozove `fn` odmah, a njen rezultat prosledi tajmeru
+A*: Pozove `fn` odmah, a njen rezultat prosledi timer-u
 A: Baca grešku
 A: Pozove `fn` svake sekunde
 W: `fn()` je poziv, a ne referenca na funkciju. Treba `setTimeout(fn, 1000)` ili `setTimeout(() => fn(), 1000)`.
@@ -3522,7 +4151,7 @@ A: Debounce
 A*: Throttle
 A: `setInterval`
 A: `Promise.all`
-W: Throttle propušta poziv najviše jednom u zadatom intervalu, što je pravo za skrol i resize. Debounce čeka na kraj niza događaja.
+W: Throttle propušta poziv najviše jednom u zadatom intervalu, što je pravo za skrol i resize. Debounce čeka na kraj niza event-a.
 @quiz
 Q: Šta moraš da uradiš kad ti `setInterval` više ne treba?
 A: Ništa, sam se zaustavi
@@ -3531,9 +4160,36 @@ A: Obrisati promenljivu
 A: Pozvati `return`
 W: Neočišćen interval radi dok se stranica ne zatvori i pravi curenje memorije i bagove.
 
-=== fetch | 11 | Fetch API: GET i POST
+=== fetch | 11 | Fetch API: GET & POST
 @intro
-`fetch` šalje HTTP zahteve iz pregledača i vraća promise sa `Response` objektom. Telo odgovora se čita posebnim promise-om.
+`fetch` šalje HTTP zahteve iz browser-a i vraća promise sa `Response` objektom. Telo odgovora se čita posebnim promise-om.
+@how
+## Tok zahteva
+`fetch(url, opcije)` vraća Promise<Response>. Resolve-uje se čim stignu status i headers, *pre* nego što je stiglo celo telo. Telo čitaš posebnim pozivom koji je takođe promise: `res.json()`, `res.text()`, `res.blob()`.
+```
+const res = await fetch(url);
+if (!res.ok) throw new Error("HTTP " + res.status);
+const data = await res.json();
+```
+## ok i status
+`res.ok` je `true` za status 200 do 299. Statusi 404 i 500 *nisu* greške za `fetch`: promise se resolve-uje, a ti proveravaš `res.ok`. Rejected je samo kad zahtev ne uspe uopšte (mreža, CORS, prekid).
+## POST sa JSON-om
+```
+fetch(url, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(podaci),
+})
+```
+Telo mora biti string (ili FormData, Blob...), a header kaže serveru kako da ga pročita. Za autentifikaciju se obično koristi header `Authorization: Bearer <token>`.
+## Query parametri
+Pravi ih sa `URL` i `URLSearchParams`, koji pravilno enkodiraju razmake, č, ć, & i ostale znakove.
+## Telo se čita jednom
+Telo odgovora može da se pročita samo jednom. Za dva čitanja koristi `res.clone()`.
+## CORS
+Browser dozvoljava zahtev ka drugom origin-u samo ako ga server dozvoli `Access-Control-Allow-*` headerima. Kad nije dozvoljeno, `fetch` odbija sa `TypeError` bez detalja. Rešava se na serveru, ne u klijentskom kodu.
+## Simulacija u ovom playground-u
+Primeri koriste simulirani API, pa nema pravih mrežnih poziva. U pravoj aplikaciji ponašanje je isto, samo sa pravim serverom.
 @points
 Poziv :: `const res = await fetch(url, opcije)`. Promise se razrešava čim stignu zaglavlja odgovora.
 `res.ok` i `res.status` :: `ok` je `true` za statuse 200 do 299. Uvek proveri pre čitanja tela.
@@ -3577,7 +4233,7 @@ const p = new URLSearchParams("sort=ime&dir=asc&tag=a&tag=b");
 console.log(p.get("sort"), p.getAll("tag"), Object.fromEntries(p));
 console.log(new URLSearchParams({ a: 1, b: "x y" }).toString());
 console.log(encodeURIComponent("a&b=c d"), decodeURIComponent("a%26b"));
-@code Zamka: 404 nije izuzetak
+@code Zamka: 404 nije exception
 async function main() {
   const res = await fetch("https://api.demo.local/missing");
   console.log("promise je uspeo, ali ok =", res.ok, "status =", res.status);
@@ -3626,14 +4282,31 @@ W: 3xx (preusmeravanja) `fetch` obično sam prati, a 4xx i 5xx su `ok === false`
 @quiz
 Q: Šta je CORS greška?
 A: Greška u JSON-u
-A*: Pregledač blokira zahtev ka drugom domenu jer server nije dozvolio taj izvor. `fetch` odbija sa `TypeError`, a rešava se na serveru
+A*: Browser blokira zahtev ka drugom domenu jer server nije dozvolio taj izvor. `fetch` odbija sa `TypeError`, a rešava se na serveru
 A: Greška u `async` funkciji
 A: Nepravilan URL
 W: Klijentski kod ne može da zaobiđe CORS. Server mora da vrati odgovarajuća `Access-Control-Allow-*` zaglavlja.
 
-=== apierrors | 11 | Greške API poziva i robustan error handling
+=== apierrors | 11 | Handling API Errors
 @intro
 Pozivi ka serveru mogu da puknu na dva različita načina i svaki traži drugačiju obradu. Dobar pomoćni sloj ih svodi na jedan jasan tok grešaka.
+@how
+## Dve vrste grešaka
+1. **Mrežne**: nema veze, CORS, prekid. `fetch` odbija sa `TypeError`.
+2. **HTTP**: server odgovori statusom 4xx (klijent je pogrešio) ili 5xx (server je pao). Promise se resolve-uje, a `res.ok === false`.
+Obe treba svesti na isti tok obrade.
+## Wrapper funkcija
+Jedna funkcija `request()` koja poziva `fetch`, hvata mrežne greške, proverava `res.ok`, parsira JSON i baca sopstvene greške. Ostatak aplikacije samo radi `await request(...)` i obrađuje jedan tip problema.
+## Custom HttpError
+`class HttpError extends Error` sa poljima `status` i `body`. U `catch` razlikuješ `instanceof HttpError` (znaš status i možeš da prikažeš poruku servera) od mrežne greške.
+## Parsiranje tela greške
+Odgovor sa greškom ne mora biti JSON (npr. HTML stranica od proxy-ja), pa `res.json()` može da pukne. Zato `await res.json().catch(() => null)`.
+## Timeout i prekid
+`fetch` nema ugrađen timeout. Koristi `AbortController`: pošalji `signal` u `fetch` i pozovi `controller.abort()` posle ms ili kad korisnik ode sa stranice. Prekid odbija promise sa `AbortError`.
+## Retry
+Ponavljaj samo privremene greške (mreža, 502, 503, 504) uz sve duže pauze (exponential backoff). Statuse 4xx ne ponavljaj jer zahtev nije ispravan.
+## UI stanje
+Uvek obradi tri stanja: loading, success i error. `finally` je pravo mesto da ugasiš loader.
 @points
 Mrežne greške :: Nema veze, CORS, prekid. `fetch` odbija promise sa `TypeError`.
 HTTP greške :: Server odgovori sa 4xx (greška klijenta) ili 5xx (greška servera). Promise se razrešava, `res.ok` je `false`.
@@ -3641,7 +4314,7 @@ Custom greška :: `class HttpError extends Error` sa poljima `status` i `body`. 
 Wrapper funkcija :: Jedna `request()` funkcija koja proveri `ok`, parsira JSON i baca jasne greške. Ostatak aplikacije ne ponavlja proveru.
 Timeout :: `AbortController` i `signal` prekidaju zahtev. Izazvana greška ima `name === "AbortError"`.
 Retry :: Ponovi samo za privremene greške (mreža, 5xx), sa sve dužom pauzom. Ne ponavljaj 4xx.
-`finally` :: Pogodan za gašenje loadera i čišćenje tajmera.
+`finally` :: Pogodan za gašenje loadera i čišćenje timer-a.
 @pitfalls
 - Ne guši greške praznim `catch`. Ili ih obradi, ili ih baci dalje.
 - `res.json()` može da pukne ako telo nije JSON (npr. HTML stranica greške sa 502). Obezbedi se sa `.catch(() => null)`.
@@ -3758,9 +4431,9 @@ A: Zato što `json()` nije promise
 A: Zato što `catch` pretvara u string
 W: Tako poruka o pravoj grešci (status) ne bude zamenjena `SyntaxError`-om od parsiranja.
 
-=== dom | 12 | DOM: pronalaženje i izmena elemenata
+=== dom | 12 | DOM: selecting & modifying elements
 @intro
-DOM je stablo objekata koje pregledač pravi od HTML-a. JavaScript ga čita i menja. U ovoj lekciji ispod editora imaš Pregled sa pravim HTML-om, pa izmene vidiš uživo.
+DOM je stablo objekata koje browser pravi od HTML-a. JavaScript ga čita i menja. U ovoj lekciji ispod editora imaš Pregled sa pravim HTML-om, pa izmene vidiš uživo.
 @html
 <style>
   body{font:14px system-ui,sans-serif;margin:12px;color:#1b1f2b}
@@ -3775,11 +4448,35 @@ DOM je stablo objekata koje pregledač pravi od HTML-a. JavaScript ga čita i me
   <li class="stavka" data-id="3">Zovi baku</li>
 </ul>
 <div id="kutija"></div>
+@how
+## Šta je DOM
+Document Object Model je stablo objekata koje browser pravi od HTML-a. Svaki tag je element node, a tekst je text node. JavaScript menja stablo, a browser iscrtava promene. `document` je koren.
+## Pronalaženje
+`querySelector(sel)` vraća prvi element ili `null`, a `querySelectorAll(sel)` statički NodeList (prazan ako nema pogodaka). Selektori su isti kao u CSS-u. `getElementById` je najbrži za ID. NodeList ima `forEach`, a za ostale array metode pretvori ga u array: `[...lista]`.
+## Čitanje i izmena
+- `textContent`: tekst elementa, bezbedno postavljanje običnog teksta.
+- `innerHTML`: parsira string kao HTML. Opasno sa tuđim tekstom (XSS).
+- `classList.add/remove/toggle/contains`: rad sa klasama.
+- `dataset.id`: čita `data-id` atribut (uvek string).
+- `getAttribute` i `setAttribute`, kao i direktni property-ji (`input.value`, `checkbox.checked`).
+## Pravljenje elemenata
+```
+const li = document.createElement("li");
+li.textContent = "Novi";
+lista.append(li);          // dodaje na kraj
+```
+`prepend`, `before`, `after`, `replaceWith` i `remove()` pokrivaju ostalo. Za mnogo elemenata napravi ih sve pa dodaj odjednom (`append(...elementi)`).
+## Kretanje kroz stablo
+`parentElement`, `children`, `firstElementChild`, `nextElementSibling` i `closest(selektor)` koji traži naviše, uključujući sam element.
+## Performanse
+Svaka izmena može da izazove ponovni layout. Prvo pročitaj sve što ti treba, pa menjaj, i izbegavaj naizmenično čitanje i pisanje u petlji. Za velike liste gradi elemente u memoriji pa ih dodaj jednom.
+## Kada skripta radi
+Skripta mora da se izvrši kad HTML već postoji: koristi `defer`, `type="module"` ili je stavi na kraj `body`-ja.
 @points
 Pronalaženje :: `document.querySelector(sel)` vraća prvi element, `querySelectorAll(sel)` sve (NodeList, ima `forEach`, a za ostale metode `[...lista]`). Selektori su CSS: `#id`, `.klasa`, `tag`, `[data-id="2"]`, `ul > li`.
 Tekst :: `textContent` bezbedno postavlja običan tekst. `innerHTML` parsira HTML i otvara vrata XSS napadu ako ubaciš tuđ tekst. Korisnički unos nikad ne ide u `innerHTML`.
 Klase :: `el.classList.add / remove / toggle / contains`.
-Atributi :: `getAttribute`, `setAttribute`, `el.dataset.id` za `data-id`, a direktna svojstva za `input.value`, `checkbox.checked`, `a.href`.
+Atributi :: `getAttribute`, `setAttribute`, `el.dataset.id` za `data-id`, a direktni property-ji za `input.value`, `checkbox.checked`, `a.href`.
 Stil :: `el.style.color = "red"` za pojedinačne izmene. Bolje je menjati klase.
 Pravljenje :: `document.createElement("li")`, postavi tekst i klase, pa `parent.append(el)`. Još: `prepend`, `before`, `after`, `replaceWith`, `remove()`.
 Kretanje kroz stablo :: `parentElement`, `children`, `firstElementChild`, `nextElementSibling`, `closest(selektor)` (traži naviše, uključujući sam element).
@@ -3844,10 +4541,10 @@ W: `querySelector` vraća `null`, a `querySelectorAll` prazan NodeList. Zato `el
 @quiz
 Q: Zašto se korisnički unos ne ubacuje preko `innerHTML`?
 A: Zato što je sporiji
-A*: Zato što pregledač izvršava HTML i skripte iz unosa (XSS)
+A*: Zato što browser izvršava HTML i skripte iz unosa (XSS)
 A: Zato što ne podržava specijalne znakove
 A: Zato što menja stil stranice
-W: `innerHTML` parsira tekst kao HTML. Napadač može da ubaci element sa događajem koji izvršava njegov kod. `textContent` tekst uvek prikazuje kao običan tekst.
+W: `innerHTML` parsira tekst kao HTML. Napadač može da ubaci element sa event-om koji izvršava njegov kod. `textContent` tekst uvek prikazuje kao običan tekst.
 @quiz
 Q: Koja je razlika između `querySelector` i `querySelectorAll`?
 A: Nema razlike
@@ -3877,11 +4574,11 @@ A: `el.data.id`
 A: `el.id`
 A*: `el.dataset.id`
 A: `el.getData("id")`
-W: `dataset` preslikava `data-*` atribute u svojstva (uvek kao stringove).
+W: `dataset` preslikava `data-*` atribute u properties (uvek kao stringove).
 
-=== events | 12 | Događaji i event delegation
+=== events | 12 | Events & Event Delegation
 @intro
-Događaji povezuju korisnika sa kodom: klik, unos, slanje forme, pritisak tastera. Pregled ispod editora je interaktivan, pa pošto pokreneš kod možeš i ručno da klikćeš i kucaš, a izlaz vidiš u konzoli.
+Events povezuju korisnika sa kodom: klik, unos, slanje forme, pritisak tastera. Pregled ispod editora je interaktivan, pa pošto pokreneš kod možeš i ručno da klikćeš i kucaš, a izlaz vidiš u konzoli.
 @html
 <style>
   body{font:14px system-ui,sans-serif;margin:12px;color:#1b1f2b}
@@ -3900,21 +4597,46 @@ Događaji povezuju korisnika sa kodom: klik, unos, slanje forme, pritisak taster
   <li data-id="1"><span>Kupi mleko</span> <button class="del">x</button></li>
   <li data-id="2"><span>Pošalji mejl</span> <button class="del">x</button></li>
 </ul>
+@how
+## Event model
+Kad se nešto desi (klik, unos, submit), browser pravi event objekat i šalje ga elementu. Event prolazi kroz tri faze: **capture** (od `document` naniže ka cilju), **target**, pa **bubbling** (od cilja naviše kroz roditelje). Listeners se po defaultu pokreću u bubbling fazi.
+## addEventListener
+`el.addEventListener("click", handler, opcije)`. Handler dobija event objekat: `e.target` (element koji je izazvao event), `e.currentTarget` (element na kome je listener), `e.key`, `e.preventDefault()`, `e.stopPropagation()`. Opcije: `{ once: true }`, `{ passive: true }`, `{ capture: true }`.
+## Uklanjanje listenera
+`removeEventListener` traži isti tip, isti handler (referencu!) i iste opcije. Anonimna funkcija se ne može ukloniti jer je svaki literal nova funkcija.
+## Event delegation
+Zbog bubbling-a jedan listener na roditelju hvata evente svih potomaka, uključujući one koji su dodati kasnije:
+```
+lista.addEventListener("click", e => {
+  const dugme = e.target.closest(".del");
+  if (!dugme) return;
+  dugme.closest("li").remove();
+});
+```
+Manje listenera, manje memorije, radi i za dinamičke elemente.
+## Forme
+Slušaj `submit` na formi (ne `click` na dugmetu, jer submit pokriva i Enter). `e.preventDefault()` sprečava slanje i reload stranice. Vrednosti čitaš sa `new FormData(form)` ili `form.elements`.
+## input i change
+`input` se aktivira na svaku promenu vrednosti, a `change` kad se polje napusti ili potvrdi.
+## Programsko pokretanje
+`el.click()`, `form.requestSubmit()`, `el.dispatchEvent(new Event("input", { bubbles: true }))`. Za sopstvene evente koristi `CustomEvent` sa `detail`.
+## Čišćenje
+Listener drži closure. Kad element nestaje, ukloni listenere koji drže velike podatke ili su na `window` i `document`.
 @points
-`addEventListener(tip, fn, opcije)` :: Dodaje rukovalac. Više rukovalaca na istom događaju je dozvoljeno. `removeEventListener` traži istu referencu na funkciju. Opcija `{ once: true }` ga uklanja posle prvog poziva.
-Objekat događaja :: `e.target` (element koji je izazvao događaj), `e.currentTarget` (element na kome je listener), `e.key`, `e.clientX`, `e.preventDefault()`, `e.stopPropagation()`.
-Česti događaji :: `click`, `input` (pri svakoj promeni vrednosti), `change` (kad se unos završi), `submit`, `keydown`, `focus` i `blur`, `DOMContentLoaded`, `scroll`, `resize`.
-Propagacija (bubbling) :: Događaj ide od elementa nagore kroz roditelje. Zato roditelj može da hvata događaje svoje dece.
+`addEventListener(tip, fn, opcije)` :: Dodaje handler. Više handler-a na istom event-u je dozvoljeno. `removeEventListener` traži istu referencu na funkciju. Opcija `{ once: true }` ga uklanja posle prvog poziva.
+Objekat event-a :: `e.target` (element koji je izazvao event), `e.currentTarget` (element na kome je listener), `e.key`, `e.clientX`, `e.preventDefault()`, `e.stopPropagation()`.
+Česti events :: `click`, `input` (pri svakoj promeni vrednosti), `change` (kad se unos završi), `submit`, `keydown`, `focus` i `blur`, `DOMContentLoaded`, `scroll`, `resize`.
+Propagacija (bubbling) :: Event ide od elementa nagore kroz roditelje. Zato roditelj može da hvata events svoje dece.
 Event delegation :: Jedan listener na roditelju umesto po jedan na svakom detetu. Radi i za elemente dodate kasnije. Koristi `e.target.closest(selektor)`.
 Forme :: Slušaj `submit` na formi (ne `click` na dugmetu), pozovi `e.preventDefault()` i pročitaj vrednosti sa `new FormData(forma)`.
-Programsko pokretanje :: `el.click()`, `forma.requestSubmit()`, `el.dispatchEvent(new Event("input", { bubbles: true }))`. Za sopstvene događaje `CustomEvent`.
+Programsko pokretanje :: `el.click()`, `forma.requestSubmit()`, `el.dispatchEvent(new Event("input", { bubbles: true }))`. Za sopstvene events `CustomEvent`.
 @pitfalls
 - `removeEventListener` ne radi sa novom anonimnom funkcijom. Sačuvaj referencu u promenljivoj.
 - `addEventListener("click", fn())` poziva `fn` odmah. Prosledi `fn`.
 - Listener na stotinama elemenata troši memoriju i ne pokriva nove elemente. Delegiraj.
 - `input` i `change` nisu isto: `input` reaguje na svaki taster, `change` tek kad se polje napusti.
 @code
-// 1) Klik i objekat događaja
+// 1) Klik i objekat event-a
 const dugme = document.querySelector("#dugme");
 let brojKlikova = 0;
 dugme.addEventListener("click", e => {
@@ -3953,7 +4675,7 @@ lista.addEventListener("click", e => {
   if (span) span.classList.toggle("gotov");
 });
 
-// 4) input događaj
+// 4) input event
 document.querySelector("#unos").addEventListener("input", e => console.log("unos:", e.target.value));
 
 // Simulacija (isto možeš i ručno u Pregledu)
@@ -3974,25 +4696,25 @@ dugme.click();
 Q: Zašto je event delegation korisna?
 A: Zato što je brža od `addEventListener`
 A*: Jedan listener na roditelju pokriva i elemente dodate kasnije
-A: Zato što sprečava propagaciju
+A: Zato što sprečava propagation
 A: Zato što ne treba `e.target`
-W: Događaji se šire naviše (bubbling), pa roditelj može da prepozna koje je dete kliknuto preko `e.target.closest(...)`. Ne moraš da dodaješ listener svakom novom elementu.
+W: Events se šire naviše (bubbling), pa roditelj može da prepozna koje je dete kliknuto preko `e.target.closest(...)`. Ne moraš da dodaješ listener svakom novom elementu.
 @quiz
-Q: Šta radi `e.preventDefault()` u rukovaocu `submit` događaja forme?
-A: Zaustavlja propagaciju događaja
-A*: Sprečava podrazumevano ponašanje: slanje forme i ponovno učitavanje stranice
+Q: Šta radi `e.preventDefault()` u handleru `submit` event-a forme?
+A: Zaustavlja propagation event-a
+A*: Sprečava default ponašanje: slanje forme i ponovno učitavanje stranice
 A: Briše sadržaj forme
 A: Uklanja listener
-W: Bez toga pregledač šalje formu i učitava novu stranicu. Time preuzimaš slanje u JavaScript (npr. `fetch`).
+W: Bez toga browser šalje formu i učitava novu stranicu. Time preuzimaš slanje u JavaScript (npr. `fetch`).
 @quiz
 Q: Razlika između `e.target` i `e.currentTarget`?
 A: Nema razlike
-A*: `target` je element koji je izazvao događaj (npr. kliknuto dete), a `currentTarget` element na kome je listener
+A*: `target` je element koji je izazvao event (npr. kliknuto dete), a `currentTarget` element na kome je listener
 A: `target` je roditelj
 A: `currentTarget` je uvek `document`
 W: Kod event delegation-a `target` je dete, a `currentTarget` roditelj sa listenerom.
 @quiz
-Q: Koji događaj koristiš da reaguješ na svaki otkucani znak u `<input>`?
+Q: Koji event koristiš da reaguješ na svaki otkucani znak u `<input>`?
 A: `change`
 A*: `input`
 A: `submit`
@@ -4008,19 +4730,41 @@ W: Uklanjanje traži isti tip, istu funkciju (referencu) i iste opcije.
 @quiz
 Q: Klikneš dugme koje je unutar `div`-a koji ima `click` listener. Šta se desi?
 A: Samo listener na dugmetu
-A*: Događaj se širi nagore (bubbling), pa se pozove i listener na `div`-u
+A*: Event se širi nagore (bubbling), pa se pozove i listener na `div`-u
 A: Samo listener na `div`-u
 A: Nijedan
-W: Zbog bubbling-a roditelji dobijaju događaje svoje dece, što je osnova za event delegation. `e.stopPropagation()` to sprečava.
+W: Zbog bubbling-a roditelji dobijaju events svoje dece, što je osnova za event delegation. `e.stopPropagation()` to sprečava.
 
-=== modules | 12 | ES moduli: import i export
+=== modules | 12 | ES Modules: import & export
 @intro
 Moduli dele kod u fajlove sa jasnim ulazima i izlazima. Koriste ih svi moderni projekti (React, Vue, Vite, Node sa `"type": "module"`). Primeri ispod su samo za čitanje, jer zahtevaju više fajlova.
+@how
+## Zašto moduli
+Bez modula svi skriptovi dele jedan globalni scope, pa se imena sudaraju i redosled učitavanja je kritičan. ES modules (ESM) daju svakom fajlu sopstveni scope i eksplicitan uvoz i izvoz.
+## Export
+- **Named**: `export const a = 1; export function f() {}` ili `export { a, f }`. Može ih biti više.
+- **Default**: `export default nesto`. Jedan po modulu.
+## Import
+`import { a, f } from "./m.js"` (named, ista imena), `import Nesto from "./m.js"` (default, ime biraš sam), `import * as m from "./m.js"` (namespace), `import { a as b }` (preimenovanje). Putanja u browseru mora da počinje sa `./`, `../` ili `/` i da ima ekstenziju.
+## Šta moduli menjaju
+- Sopstveni scope: top-level promenljive nisu globalne.
+- Uvek strict mode.
+- Izvršavaju se jednom, a svi uvoznici dele istu instancu (i stanje).
+- Učitavaju se `defer`: posle parsiranja HTML-a.
+- Top-level `await` je dozvoljen.
+## U browseru
+`<script type="module" src="app.js">`. Ne radi sa `file://` zbog CORS pravila, pa koristi lokalni server (Vite, `npx serve`).
+## Dynamic import
+`const m = await import("./tezak.js")` vraća promise i učitava modul tek kad zatreba (lazy loading, code splitting).
+## Preporuka
+Preferiraj named exports (bolji autocomplete i refactoring). Izbegavaj kružne zavisnosti: izdvoji zajednički kod u treći modul.
+## CommonJS
+Starija Node sintaksa (`require`, `module.exports`). U novim projektima koristi ESM.
 @points
 Named export :: `export const x`, `export function f` ili na kraju `export { x, f }`. Uvoz u vitičastim zagradama sa istim imenom: `import { x, f } from "./fajl.js"`.
 Default export :: Jedan po modulu: `export default Klasa`. Uvoz bez zagrada, ime biraš sam: `import Nesto from "./fajl.js"`.
 Preimenovanje :: `import { x as y }`, `export { x as y }`. Ceo modul odjednom: `import * as util from "./util.js"`.
-U pregledaču :: `<script type="module" src="app.js">`. Putanja mora imati ekstenziju i početi sa `./`, `../` ili `/`. Modul se izvršava kao `defer`, u strict režimu i sa sopstvenim dosegom (nema slučajnih globalnih promenljivih).
+U browser-u :: `<script type="module" src="app.js">`. Putanja mora imati ekstenziju i početi sa `./`, `../` ili `/`. Modul se izvršava kao `defer`, u strict mode-u i sa sopstvenim scope-om (nema slučajnih globalnih promenljivih).
 Dinamički import :: `const m = await import("./tezak.js")` učitava kod tek kad zatreba (lazy loading).
 Top-level `await` :: Dozvoljen u modulima.
 Izvršava se jednom :: Svi koji uvoze modul dele istu instancu, pa se i stanje deli.
@@ -4074,8 +4818,8 @@ A: Umesto svakog `import`-a
 W: Dinamički import vraća promise i smanjuje početnu veličinu aplikacije (lazy loading).
 @quiz
 Q: Zašto moduli ne rade kad stranicu otvoriš direktno iz fajla (`file://`)?
-A: Moduli ne rade u pregledaču
-A*: Pregledač ih učitava preko HTTP-a uz CORS pravila, pa je potreban lokalni server
+A: Moduli ne rade u browser-u
+A*: Browser ih učitava preko HTTP-a uz CORS pravila, pa je potreban lokalni server
 A: Zbog ekstenzije `.js`
 A: Zbog strict režima
 W: Koristi `npx serve`, Vite ili sličan dev server.
@@ -4092,7 +4836,7 @@ W: Default export se uvozi bez vitičastih zagrada, pod imenom koje sam izabere�
 @quiz
 Q: Šta je tačno za `<script type="module">`?
 A: Promenljive postaju globalne
-A*: Ima sopstveni doseg, radi u strict režimu i izvršava se posle parsiranja HTML-a
+A*: Ima sopstveni scope, radi u strict mode-u i izvršava se posle parsiranja HTML-a
 A: Ne može da koristi `import`
 A: Radi samo u Node.js-u
 W: Moduli su `defer` po defaultu, striktni i izolovani: top-level promenljive nisu na `window`.
@@ -4104,9 +4848,9 @@ W: Moduli su `defer` po defaultu, striktni i izolovani: top-level promenljive ni
 
 /* ---------- osnovno ---------- */
 var MODULES=[
-  'Osnovni koncepti i tipovi','Operatori i matematika','Kontrola toka','Rad sa tekstom i regex',
-  'Petlje','Funkcije','Nizovi, Set i Map','Objekti i klase','Podaci u praksi: JSON i datumi',
-  'Greške i debagovanje','Asinhroni JavaScript i API-ji','DOM, događaji i moduli'
+  'Basics & Types','Operators & Math','Control Flow','Strings & Regex',
+  'Loops','Functions','Arrays, Set & Map','Objects & Classes','JSON & Dates',
+  'Errors & Debugging','Async JavaScript & APIs','DOM, Events & Modules'
 ];
 var esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');};
 var fmt=function(s){return esc(s).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');};
@@ -4155,7 +4899,7 @@ function parse(raw){
   raw.split('\n').forEach(function(line){
     if(line.indexOf('=== ')===0){
       var p=line.slice(4).split('|').map(function(s){return s.trim();});
-      cur={id:p[0],mod:+p[1],title:p[2],intro:[],points:[],pitfalls:[],examples:[],quiz:[],note:'',htmlLines:[]};
+      cur={id:p[0],mod:+p[1],title:p[2],intro:[],points:[],pitfalls:[],examples:[],quiz:[],note:'',htmlLines:[],how:[]};
       lessons.push(cur);sec=null;return;
     }
     if(!cur)return;
@@ -4168,6 +4912,7 @@ function parse(raw){
     }
     if(sec==='code'||sec==='static'){ex.lines.push(line);return;}
     if(sec==='html'){cur.htmlLines.push(line);return;}
+    if(sec==='how'){cur.how.push(line);return;}
     if(!line.trim())return;
     if(sec==='intro')cur.intro.push(line);
     else if(sec==='points'){var i=line.indexOf(' :: ');cur.points.push([line.slice(0,i),line.slice(i+4)]);}
@@ -4437,7 +5182,7 @@ function Playground(examples,note,markup){
     f.srcdoc=buildDoc(ta.value,id,markup);
     if(markup){pvBody.textContent='';pvBody.appendChild(f);}else root.appendChild(f);
     frame=f;
-    setTimeout(function(){if(!ready&&runId===id)addLine('error','Izvršno okruženje nije odgovorilo. Pregledač ili hosting verovatno blokira sandbox iframe.');},2500);
+    setTimeout(function(){if(!ready&&runId===id)addLine('error','Izvršno okruženje nije odgovorilo. Browser ili hosting verovatno blokira sandbox iframe.');},2500);
   }
   runBtn.onclick=run;
   resetBtn.onclick=function(){
@@ -4597,7 +5342,7 @@ function renderProfiles(){
   main.textContent='';
   var wrap=h('div','pf');
   wrap.appendChild(h('h1','','Ko uči danas?'));
-  wrap.appendChild(h('p','','Upiši ime ili nadimak i kreni. Napredak i bodovi se čuvaju u ovom pregledaču, posebno za svaki profil. Kad se vratiš, izaberi sebe i nastavi gde si stao.'));
+  wrap.appendChild(h('p','','Upiši ime ili nadimak i kreni. Napredak i bodovi se čuvaju u ovom browseru, posebno za svaki profil. Kad se vratiš, izaberi sebe i nastavi gde si stao.'));
   var row=h('div','pf-new'),inp=h('input');
   inp.type='text';inp.maxLength=24;inp.placeholder='Ime ili nadimak';inp.setAttribute('aria-label','Ime ili nadimak');inp.autocomplete='off';
   var go1=h('button','btn primary','Kreni');go1.type='button';
@@ -4641,14 +5386,14 @@ function renderProfiles(){
   guest.onclick=function(){createProfile('Gost',err);};
   wrap.appendChild(guest);
   if(!storageOk){
-    var warn=h('p','pf-err','Pregledač ne dozvoljava čuvanje podataka (privatni režim?). Profili i napredak važe samo dok je stranica otvorena.');
+    var warn=h('p','pf-err','Browser ne dozvoljava čuvanje podataka (privatni režim?). Profili i napredak važe samo dok je stranica otvorena.');
     warn.style.color='var(--warn)';wrap.appendChild(warn);
   }
 
   if(store.active){
     var det=h('details','bk'),sum=h('summary','','Backup i prenos na drugi uređaj');
     det.appendChild(sum);
-    det.appendChild(h('p','','Napredak živi samo u ovom pregledaču. Ako menjaš uređaj ili brišeš podatke sajta, kopiraj backup i čuvaj ga negde. Na drugom uređaju napravi profil, pa nalepi backup ispod (spaja se sa postojećim napretkom).'));
+    det.appendChild(h('p','','Napredak živi samo u ovom browseru. Ako menjaš uređaj ili brišeš podatke sajta, kopiraj backup i čuvaj ga negde. Na drugom uređaju napravi profil, pa nalepi backup ispod (spaja se sa postojećim napretkom).'));
     var ex=h('textarea');ex.readOnly=true;ex.setAttribute('aria-label','Backup profila');
     ex.value=JSON.stringify({app:'js-refresher',v:2,name:store.profiles[store.active].name,data:state});
     var cp=h('button','btn','Kopiraj backup');cp.type='button';
@@ -4707,6 +5452,30 @@ function renderHome(){
   main.appendChild(map);
 }
 
+function renderHow(lines){
+  var box=h('div','how'),list=null,inCode=false,code=[];
+  function flushList(){list=null;}
+  lines.forEach(function(line){
+    if(line.indexOf('```')===0){
+      if(inCode){
+        var pre=h('pre','how-code'),c=h('code');c.innerHTML=hl(code.join('\n'));pre.appendChild(c);box.appendChild(pre);code=[];inCode=false;
+      }else{flushList();inCode=true;}
+      return;
+    }
+    if(inCode){code.push(line);return;}
+    if(!line.trim()){flushList();return;}
+    if(line.indexOf('## ')===0){flushList();var t=h('h3');t.innerHTML=fmt(line.slice(3));box.appendChild(t);return;}
+    var m=line.match(/^(?:- |\d+\. )(.*)$/);
+    if(m){
+      if(!list){list=h(/^\d/.test(line)?'ol':'ul');box.appendChild(list);}
+      var li=h('li');li.innerHTML=fmt(m[1]);list.appendChild(li);return;
+    }
+    flushList();
+    var p=h('p');p.innerHTML=fmt(line);box.appendChild(p);
+  });
+  return box;
+}
+
 function renderLesson(l){
   document.title=l.title+' | JavaScript Refresher';
   document.getElementById('topTitle').textContent=l.title;
@@ -4723,7 +5492,11 @@ function renderLesson(l){
   };
   head.appendChild(t);head.appendChild(db);art.appendChild(head);
   l.intro.forEach(function(p){var e=h('p','intro');e.innerHTML=fmt(p);art.appendChild(e);});
+  if(l.how&&l.how.length){
+    var hs=h('section','blk');hs.appendChild(h('h2','','Kako funkcioniše'));hs.appendChild(renderHow(l.how));art.appendChild(hs);
+  }
   if(l.points.length){
+    art.appendChild(h('h2','ref','Brza referenca'));
     var dl=h('dl','points');
     l.points.forEach(function(p){
       var row=h('div'),dt=h('dt'),dd=h('dd');dt.innerHTML=fmt(p[0]);dd.innerHTML=fmt(p[1]);row.appendChild(dt);row.appendChild(dd);dl.appendChild(row);
