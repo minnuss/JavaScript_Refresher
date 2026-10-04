@@ -75,6 +75,8 @@ Oznake (direktive):
 
 Redosled lekcija u bloku određuje redosled u aplikaciji.
 
+Važno: ako u sadržaju lekcije treba da napišeš tekst `</script>` (npr. u primeru HTML fajla), napiši ga kao `<\/script>`. Inače browser pomisli da je blok sa sadržajem završen i ostatak ispiše kao običan tekst na dnu stranice. Aplikacija sama vraća `<\/script>` u `</script>` pri učitavanju.
+
 Napomena o sačuvanim rezultatima: bodovi se pamte po ključu `idLekcije#rednibrojPitanja`. Nova pitanja dodaj na KRAJ liste pitanja u lekciji, a postojeća ne preuređuj i ne umeći između, inače će se sačuvani rezultati pomeriti na druga pitanja. Isto važi za promenu `id`-ja lekcije.
 
 ## Struktura fajla

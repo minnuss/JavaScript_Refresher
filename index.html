@@ -4808,22 +4808,7 @@ document.querySelector("#grafik").addEventListener("click", async () => {
 <html>
 <body>
   <button id="grafik">Prikaži grafik</button>
-  <script type="module" src="./app.js">
-@quiz
-Q: Kada ima smisla dinamički `import()`?
-A: Nikad
-A*: Kad kod treba učitati tek na zahtev (težak modul, ruta, retko korišćena funkcija)
-A: Samo u Node.js-u
-A: Umesto svakog `import`-a
-W: Dinamički import vraća promise i smanjuje početnu veličinu aplikacije (lazy loading).
-@quiz
-Q: Zašto moduli ne rade kad stranicu otvoriš direktno iz fajla (`file://`)?
-A: Moduli ne rade u browser-u
-A*: Browser ih učitava preko HTTP-a uz CORS pravila, pa je potreban lokalni server
-A: Zbog ekstenzije `.js`
-A: Zbog strict režima
-W: Koristi `npx serve`, Vite ili sličan dev server.
-</script>
+  <script type="module" src="./app.js"><\/script>
 </body>
 </html>
 @quiz
@@ -4840,6 +4825,20 @@ A*: Ima sopstveni scope, radi u strict mode-u i izvršava se posle parsiranja HT
 A: Ne može da koristi `import`
 A: Radi samo u Node.js-u
 W: Moduli su `defer` po defaultu, striktni i izolovani: top-level promenljive nisu na `window`.
+@quiz
+Q: Kada ima smisla dinamički `import()`?
+A: Nikad
+A*: Kad kod treba učitati tek na zahtev (težak modul, ruta, retko korišćena funkcija)
+A: Samo u Node.js-u
+A: Umesto svakog `import`-a
+W: Dinamički import vraća promise i smanjuje početnu veličinu aplikacije (lazy loading).
+@quiz
+Q: Zašto moduli ne rade kad stranicu otvoriš direktno iz fajla (`file://`)?
+A: Moduli ne rade u browser-u
+A*: Browser ih učitava preko HTTP-a uz CORS pravila, pa je potreban lokalni server
+A: Zbog ekstenzije `.js`
+A: Zbog strict mode-a
+W: Koristi `npx serve`, Vite ili sličan dev server.
 </script>
 
 <script>
@@ -4928,7 +4927,7 @@ function parse(raw){
   lessons.forEach(function(l){l.html=l.htmlLines.join('\n').trim();l.examples.forEach(function(e){while(e.lines.length&&!e.lines[e.lines.length-1].trim())e.lines.pop();e.code=e.lines.join('\n');});});
   return lessons;
 }
-var LESSONS=parse(document.getElementById('content').textContent);
+var LESSONS=parse(document.getElementById('content').textContent.replace(/<\\\/script/gi,'<'+'/script'));
 var byId={};LESSONS.forEach(function(l,i){l.idx=i;byId[l.id]=l;});
 
 /* ---------- bojenje sintakse ---------- */
